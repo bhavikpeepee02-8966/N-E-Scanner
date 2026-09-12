@@ -252,7 +252,7 @@
     <input type="file" id="zipMulti" accept=".zip" multiple onchange="handleMultiZip(event, 'bulk')">
     <div class="ico">📦📦📦</div>
     <div class="txt">પહેલી વાર: 35+ ZIP એકસાથે અપલોડ કરો</div>
-    <div class="sm">MACD માટે 35+ દિવસ જોઈએ</div>
+    <div class="sm">MACD ડેટા હોય તો extra bonus મળે (ઓછામાં ઓછા 20 દિવસ પૂરતા)</div>
   </label>
 
   <label class="upload daily" for="zipDaily">
@@ -326,7 +326,7 @@ const TARGET_MIN = 5;
 const TARGET_MAX = 15;
 const MIN_SCORE = 60;
 const STRONG_SCORE = 80;
-const MIN_DAYS_MACD = 35;
+const MIN_DAYS = 20; // MACD હવે ફરજિયાત નથી — 20+ દિવસ પૂરતા, MACD ડેટા હોય તો બોનસ સ્કોર મળે
 
 let db = null;
 let stockData = {};
@@ -658,8 +658,8 @@ async function updateStatus() {
     if (m.removed > 0) {
       txt += `<br><small style="color:#c62828;">🗑️ ${m.removed} જૂનો દિવસ ડિલીટ</small>`;
     }
-    if (m.days < MIN_DAYS_MACD) {
-      txt += `<br><small style="color:#e65100;">⚠️ MACD માટે ${MIN_DAYS_MACD}+ દિવસ જોઈએ</small>`;
+    if (m.days < 26) {
+      txt += `<br><small style="color:#e65100;">⚠️ MACD બોનસ માટે 26+ દિવસ જોઈએ (સ્કોર બાકી બધા signals થી હજુ મળે છે)</small>`;
     }
     el.innerHTML = txt;
   } else {
@@ -762,12 +762,12 @@ function analyze() {
   const out = [];
   for (const sym in stockData) {
     const d = stockData[sym];
-    if (d.length < MIN_DAYS_MACD) continue;
+    if (d.length < MIN_DAYS) continue;
     const r = calc(sym, d);
     if (!r) continue;
 
     if (r.score >= MIN_SCORE && r.rsi >= 35 && r.rsi <= 70) {
-      out.push(r);
+      out.push(r); // ફક્ત score≥60 & RSI 35-70 વાળા સારા શેર — ના મળે તો list ખાલી રહેશે (એ સ્વીકાર્ય છે)
     }
   }
   out.sort((a, b) => b.score - a.score);
@@ -940,7 +940,7 @@ function openGoogleGraph(symbol) {
 function render(list) {
   const res = document.getElementById('results');
   if (list.length === 0) {
-    res.innerHTML = '<div class="empty">❌ કોઈ શેર નથી. ' + MIN_DAYS_MACD + '+ દિવસનો ડેટા જોઈએ.</div>';
+    res.innerHTML = '<div class="empty">❌ આજે score≥' + MIN_SCORE + ' ને તંદુરસ્ત RSI વાળા શેર નથી. (ઓછામાં ઓછા ' + MIN_DAYS + '+ દિવસનો ડેટા પણ જોઈએ)</div>';
     return;
   }
 
