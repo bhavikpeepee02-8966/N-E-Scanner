@@ -425,6 +425,7 @@ async function handleMultiZip(event, mode) {
           const iLo = h.indexOf('LwPric');
           const iCl = h.indexOf('ClsPric');
           const iVol = h.indexOf('TtlTradgVol');
+          const iDeliv = h.indexOf('DELIV_PER') !== -1 ? h.indexOf('DELIV_PER') : h.indexOf('%DELIVQTY');
 
           if (iSym === -1 || iCl === -1) continue;
 
@@ -448,7 +449,8 @@ async function handleMultiZip(event, mode) {
               o: parseFloat(p[iOp]),
               h: parseFloat(p[iHi]),
               l: parseFloat(p[iLo]),
-              c, v
+              c, v,
+              dp: (iDeliv !== -1 && p[iDeliv] !== undefined) ? parseFloat(p[iDeliv]) : undefined // Delivery% — તમારી હાલની ZIP ફાઈલમાં ના હોય તો undefined જ રહેશે, કંઈ તૂટશે નહીં
             });
           }
         }
@@ -864,6 +866,14 @@ function calc(sym, d) {
     sig.push({ ok: 0, t: `❌ MACD Bearish` });
   }
 
+  // Delivery% — ફક્ત એ ZIP ફાઈલોમાં જ મળે છે જેમાં DELIV_PER/%DELIVQTY કોલમ હોય;
+  // તમારી હાલની CM-UDiFF bhavcopy ફાઈલોમાં આ કોલમ નથી, એટલે અત્યારે આ tag દેખાશે નહીં —
+  // ભવિષ્યમાં delivery-data વાળી ફાઈલ upload કરો તો આપોઆપ ઉમેરાશે, કંઈ તૂટશે નહીં.
+  if (last.dp !== undefined && !isNaN(last.dp)) {
+    if (last.dp >= 50) { score += 8; sig.push({ ok: 1, t: `✅ Delivery ${last.dp.toFixed(0)}%` }); }
+    else sig.push({ ok: 0, t: `❌ Delivery ${last.dp.toFixed(0)}%` });
+  }
+
   const sl = price * (1 - SL_PCT / 100);
 
   let t1 = high20val * 1.01;
@@ -880,7 +890,8 @@ function calc(sym, d) {
   return {
     sym, price, score, rsi, vR, sig,
     entry: price, sl, t1, t2, rr, profitPct,
-    macdLine, signalLine, histogram, macdBullish
+    macdLine, signalLine, histogram, macdBullish,
+    confirmAbove: last.h
   };
 }
 
@@ -988,6 +999,7 @@ function render(list) {
           MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}
         </span>
       </div>
+      <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો (આજના high નો breakout confirm કરવા)</div>
       <div class="cd">
         <div class="d"><div class="dl">ભાવ</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Entry</div><div class="dv g">₹${s.entry.toFixed(2)}</div></div>
