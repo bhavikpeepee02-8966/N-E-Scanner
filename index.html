@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NSE Scanner - MACD Safe Mode</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2e7d32">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -294,24 +289,6 @@
   <div id="results">
     <div class="empty">📂 ઉપર ZIP ફાઈલ અપલોડ કરો</div>
   </div>
-
-  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:14px;margin-top:14px;">
-    <h2 style="color:#1b5e20;font-size:15px;margin-bottom:8px;">☁️ GitHub Cloud Sync</h2>
-    <p style="font-size:11.5px;color:#558b2f;line-height:1.5;margin-bottom:10px;">ડેટા તમારા private GitHub repo માં જાય છે. ZIP upload કરો પછી આપોઆપ sync થઈ જશે.</p>
-    <label style="font-size:11px;color:#558b2f;display:block;margin:8px 0 3px;">GitHub Username</label>
-    <input type="text" id="ghOwner" placeholder="દા.ત. bhavikpeepee02-8966" style="width:100%;padding:9px 10px;border:1px solid #a5d6a7;border-radius:8px;font-size:14px;box-sizing:border-box;">
-    <label style="font-size:11px;color:#558b2f;display:block;margin:8px 0 3px;">Repo નામ</label>
-    <input type="text" id="ghRepo" placeholder="દા.ત. Bvkdatabkp" style="width:100%;padding:9px 10px;border:1px solid #a5d6a7;border-radius:8px;font-size:14px;box-sizing:border-box;">
-    <label style="font-size:11px;color:#558b2f;display:block;margin:8px 0 3px;">Personal Access Token</label>
-    <input type="text" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:9px 10px;border:1px solid #a5d6a7;border-radius:8px;font-size:14px;box-sizing:border-box;">
-    <label style="font-size:11px;color:#558b2f;display:block;margin:8px 0 3px;">ફાઈલ નામ (repo માં)</label>
-    <input type="text" id="ghPath" placeholder="nse-scanner-macd.json" style="width:100%;padding:9px 10px;border:1px solid #a5d6a7;border-radius:8px;font-size:14px;box-sizing:border-box;">
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button style="background:#43a047;color:#fff;flex:1;border:none;border-radius:8px;padding:11px;font-weight:700;" id="ghSaveBtn">⬆️ Cloud Save</button>
-      <button style="background:#fff;color:#2e7d32;border:2px solid #2e7d32;flex:1;border-radius:8px;padding:11px;font-weight:700;" id="ghRestoreBtn">⬇️ Restore</button>
-    </div>
-    <p id="ghSyncStatus" style="font-size:11.5px;margin-top:10px;min-height:1.2em;"></p>
-  </div>
 </div>
 
 <script>
@@ -508,8 +485,6 @@ async function handleMultiZip(event, mode) {
     if (allStocks.length > 0 && latestDate) {
       await saveSignals(allStocks, latestDate);
     }
-
-    pushToCloud(true); // silent auto-sync after every ZIP upload
   } catch (err) {
     res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>';
   }
@@ -1013,115 +988,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     const m = await getDB(META, 'info');
     if (m && m.stocks) await loadFromDB();
   } catch (e) { console.log(e); }
-});
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
-
-// ================= Backup: GitHub Cloud Sync (IndexedDB-based, auto after each ZIP) =================
-const GH_DEFAULTS = { owner:'bhavikpeepee02-8966', repo:'Bvkdatabkp', token:'', path:'nse-scanner-macd.json' };
-const GH_SETTINGS_KEY = 'ghSyncSettingsV1_' + GH_DEFAULTS.path;
-
-async function collectAllData(){
-  const stocks = await getDB(STORE, 'all') || {};
-  const meta = await getDB(META, 'info') || {};
-  const signals = await getAllDB(SIGNALS);
-  return { stocks, meta, signals };
-}
-async function restoreAllData(obj){
-  await saveDB(STORE, 'all', obj.stocks || {});
-  await saveDB(META, 'info', obj.meta || {});
-  if(Array.isArray(obj.signals)){
-    for(const sig of obj.signals){
-      if(sig && sig.date) await saveDB(SIGNALS, 'signal_' + sig.date, sig);
-    }
-  }
-}
-function loadGhSettings(){
-  try{ return JSON.parse(localStorage.getItem(GH_SETTINGS_KEY)) || {}; }catch(e){ return {}; }
-}
-function saveGhSettings(s){ localStorage.setItem(GH_SETTINGS_KEY, JSON.stringify(s)); }
-
-const ghOwnerInput = document.getElementById('ghOwner');
-const ghRepoInput = document.getElementById('ghRepo');
-const ghTokenInput = document.getElementById('ghToken');
-const ghPathInput = document.getElementById('ghPath');
-const ghSyncStatus = document.getElementById('ghSyncStatus');
-
-(function initGhFields(){
-  const s = loadGhSettings();
-  ghOwnerInput.value = s.owner || GH_DEFAULTS.owner;
-  ghRepoInput.value = s.repo || GH_DEFAULTS.repo;
-  ghTokenInput.value = s.token || GH_DEFAULTS.token;
-  ghPathInput.value = GH_DEFAULTS.path;
-})();
-
-function currentGhConfig(){
-  return {
-    owner: ghOwnerInput.value.trim(),
-    repo: ghRepoInput.value.trim(),
-    token: ghTokenInput.value.trim(),
-    path: (ghPathInput.value.trim() || GH_DEFAULTS.path)
-  };
-}
-function setGhStatus(msg, ok){
-  ghSyncStatus.textContent = msg;
-  ghSyncStatus.style.color = ok===true ? '#2e7d32' : (ok===false ? '#c62828' : '#558b2f');
-}
-
-async function pushToCloud(silent){
-  const cfg = currentGhConfig();
-  if(!cfg.owner || !cfg.repo || !cfg.token || !cfg.path){ if(!silent) setGhStatus('❌ Username, Repo, Token અને ફાઈલ નામ ભરવું જરૂરી છે.', false); return; }
-  saveGhSettings({ owner:cfg.owner, repo:cfg.repo, token:cfg.token, path:cfg.path });
-  if(!silent) setGhStatus('⏳ Save થઈ રહ્યું છે...');
-  try{
-    const dataStr = JSON.stringify(await collectAllData());
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-    let sha = undefined;
-    const getRes = await fetch(apiUrl, { headers:{ 'Authorization':`token ${cfg.token}`, 'Accept':'application/vnd.github+json' } });
-    if(getRes.status === 200){ const getJson = await getRes.json(); sha = getJson.sha; }
-    else if(getRes.status !== 404){ throw new Error('GitHub read error: '+getRes.status); }
-    const putRes = await fetch(apiUrl, {
-      method:'PUT',
-      headers:{ 'Authorization':`token ${cfg.token}`, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        message: 'Auto backup ' + new Date().toISOString(),
-        content: btoa(unescape(encodeURIComponent(dataStr))),
-        sha
-      })
-    });
-    if(!putRes.ok){ const t = await putRes.text(); throw new Error('GitHub save error: '+putRes.status+' '+t.slice(0,150)); }
-    setGhStatus('✅ Auto-sync થઈ ગયું ('+new Date().toLocaleString('gu-IN')+')', true);
-  }catch(err){
-    setGhStatus('❌ Auto-sync નિષ્ફળ: '+err.message, false);
-  }
-}
-document.getElementById('ghSaveBtn').addEventListener('click', ()=> pushToCloud(false));
-
-document.getElementById('ghRestoreBtn').addEventListener('click', async ()=>{
-  const cfg = currentGhConfig();
-  if(!cfg.owner || !cfg.repo || !cfg.token || !cfg.path){ setGhStatus('❌ Username, Repo, Token અને ફાઈલ નામ ભરવું જરૂરી છે.', false); return; }
-  if(!confirm('Cloud માંથી Restore કરવાથી આ ફોન પરનો હાલનો ડેટા બદલાઈ જશે. આગળ વધવું છે?')) return;
-  saveGhSettings({ owner:cfg.owner, repo:cfg.repo, token:cfg.token, path:cfg.path });
-  setGhStatus('⏳ Restore થઈ રહ્યું છે...');
-  try{
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-    const getRes = await fetch(apiUrl, { headers:{ 'Authorization':`token ${cfg.token}`, 'Accept':'application/vnd.github.raw' } });
-    if(getRes.status === 404){ setGhStatus('❌ Cloud પર હજુ કોઈ backup ફાઈલ નથી — પહેલા "Save" કરો.', false); return; }
-    if(!getRes.ok){ throw new Error('GitHub read error: '+getRes.status); }
-    const dataStr = await getRes.text();
-    let plainObj;
-    try{ plainObj = JSON.parse(dataStr); }
-    catch(e){ setGhStatus('❌ Cloud પરનો ડેટા વાંચી ના શકાયો.', false); return; }
-    await restoreAllData(plainObj);
-    setGhStatus('✅ Restore થઈ ગયું — પેજ ફરી લોડ થાય છે...', true);
-    setTimeout(()=>location.reload(), 900);
-  }catch(err){
-    setGhStatus('❌ Restore નિષ્ફળ: '+err.message, false);
-  }
 });
 </script>
 </body>
