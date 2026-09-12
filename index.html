@@ -112,7 +112,7 @@
   <h1>🛡️ NSE Scanner - MACD Safe Mode Pro</h1>
   <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Portfolio Track</p>
 
-  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Portfolio Export (1 Share)</div>
+  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Portfolio Export (1 Share, Confirm Entry)</div>
 
   <div id="reminderBanner"></div>
   <div id="dataStatus" class="status">📊 હાલ કોઈ ડેટા નથી</div>
@@ -141,7 +141,7 @@
   <div class="btns">
     <button class="btn btn-load" onclick="loadFromDB()">🔄 ડેટા લોડ કરો</button>
     <button class="btn btn-export" onclick="exportExcel()">📥 Excel Export</button>
-    <button class="btn btn-portfolio" onclick="exportPortfolio()">📊 Portfolio Export (1 Share Track)</button>
+    <button class="btn btn-portfolio" onclick="exportPortfolio()">📊 Portfolio Export (1 Share, Confirm Entry)</button>
     <button class="btn btn-del" onclick="deleteDB()">🗑️ બધો ડેટા ડિલીટ</button>
   </div>
 
@@ -205,7 +205,7 @@ let searchTerm = '';
 
 function openDB() {
   return new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 6);
+    const r = indexedDB.open(DB_NAME, 7);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
@@ -487,11 +487,10 @@ function exportExcel() {
   document.body.removeChild(link);
 }
 
-// ============ PORTFOLIO EXPORT (MSP-Portfolios format, 1 Share Each) ============
+// ============ PORTFOLIO EXPORT (MSP Format, Confirm Entry, 1 Share) ============
 function exportPortfolio() {
   if (allStocks.length === 0) { alert('પહેલા ડેટા લોડ કરો'); return; }
 
-  // Top Strong Buy શેર લો (બધા)
   let list = allStocks.filter(s => s.score >= STRONG_SCORE);
   if (list.length === 0) list = allStocks.slice(0, 10);
 
@@ -525,12 +524,12 @@ function exportPortfolio() {
     const symbolNS = s.sym + '.NS';
     const companyName = s.sym;
     
-    // Row 1: ખાલી symbol info
+    // Row 1: Symbol info
     csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","","","","","","","","","","","",""\n`;
     id++;
     
-    // Row 2: Buy — 1 share
-    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","1","${s.entry.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
+    // Row 2: Buy — 1 share, Confirm Entry price
+    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","1","${s.confirmAbove.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
     id++;
   });
 
@@ -547,7 +546,7 @@ function exportPortfolio() {
   link.click();
   document.body.removeChild(link);
 
-  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા (1 share each)!\n\nPortfolio tracker માં import કરો.');
+  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા (Confirm Entry Price, 1 share each)!');
 }
 
 function analyze() {
@@ -780,7 +779,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const GH_DEFAULTS = { owner: 'bhavikpeepee02-8966', repo: 'Bvkdatabkp', token: '', path: 'nse-scanner-macd-pro.json' };
-const GH_SETTINGS_KEY = 'ghSyncSettingsV6_' + GH_DEFAULTS.path;
+const GH_SETTINGS_KEY = 'ghSyncSettingsV7_' + GH_DEFAULTS.path;
 
 async function collectAllData() {
   const stocks = await getDB(STORE, 'all') || {};
