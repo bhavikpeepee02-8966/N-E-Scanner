@@ -38,6 +38,7 @@
   .btn-load { background: #43a047; }
   .btn-del { background: #e53935; }
   .btn-export { background: #1976d2; }
+  .btn-portfolio { background: #7b1fa2; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
   .stat { background: #f1f8e9; padding: 12px 6px; border-radius: 8px; text-align: center; border: 1px solid #c5e1a5; transition: 0.2s; }
   .stat.clickable { cursor: pointer; }
@@ -98,8 +99,8 @@
   @media (min-width: 600px) {
     body { padding: 20px; }
     .container { max-width: 900px; margin: 0 auto; padding: 24px; }
-    .btns { flex-direction: row; }
-    .btn { width: auto; flex: 1; }
+    .btns { flex-direction: row; flex-wrap: wrap; }
+    .btn { width: auto; flex: 1; min-width: 200px; }
     .stats { grid-template-columns: repeat(4, 1fr); }
     .nse a { display: inline-block; margin: 5px; }
     h1 { font-size: 26px; }
@@ -109,9 +110,9 @@
 <body>
 <div class="container">
   <h1>🛡️ NSE Scanner - MACD Safe Mode Pro</h1>
-  <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Cloud Sync</p>
+  <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Portfolio Track</p>
 
-  <div class="info">✅ MACD | EMA | Breakout | RSI | Close Position | Change% | 20MA | Streak | Buy 75+ | Strong 100+</div>
+  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Portfolio Export (1 Share)</div>
 
   <div id="reminderBanner"></div>
   <div id="dataStatus" class="status">📊 હાલ કોઈ ડેટા નથી</div>
@@ -140,6 +141,7 @@
   <div class="btns">
     <button class="btn btn-load" onclick="loadFromDB()">🔄 ડેટા લોડ કરો</button>
     <button class="btn btn-export" onclick="exportExcel()">📥 Excel Export</button>
+    <button class="btn btn-portfolio" onclick="exportPortfolio()">📊 Portfolio Export (1 Share Track)</button>
     <button class="btn btn-del" onclick="deleteDB()">🗑️ બધો ડેટા ડિલીટ</button>
   </div>
 
@@ -191,6 +193,9 @@ const MIN_SCORE = 75;
 const STRONG_SCORE = 100;
 const MIN_DAYS = 20;
 const MIN_DAYS_MACD = 26;
+const MIN_RR = 1.5;
+const RSI_MIN = 40;
+const RSI_MAX = 65;
 
 let db = null;
 let stockData = {};
@@ -200,7 +205,7 @@ let searchTerm = '';
 
 function openDB() {
   return new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 3);
+    const r = indexedDB.open(DB_NAME, 6);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
@@ -482,6 +487,69 @@ function exportExcel() {
   document.body.removeChild(link);
 }
 
+// ============ PORTFOLIO EXPORT (MSP-Portfolios format, 1 Share Each) ============
+function exportPortfolio() {
+  if (allStocks.length === 0) { alert('પહેલા ડેટા લોડ કરો'); return; }
+
+  // Top Strong Buy શેર લો (બધા)
+  let list = allStocks.filter(s => s.score >= STRONG_SCORE);
+  if (list.length === 0) list = allStocks.slice(0, 10);
+
+  const dateInfo = getLatestDate();
+  const today = new Date();
+  
+  let dateStr = '';
+  if (dateInfo.raw && dateInfo.raw.length === 8) {
+    dateStr = dateInfo.raw.slice(6, 8) + '-' + dateInfo.raw.slice(4, 6) + '-' + dateInfo.raw.slice(0, 4);
+  } else {
+    dateStr = String(today.getDate()).padStart(2, '0') + '-' + 
+              String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+              today.getFullYear();
+  }
+  const gmtDate = dateStr + ' GMT+0530';
+  const timeStr = String(today.getHours()).padStart(2, '0') + ':' + 
+                  String(today.getMinutes()).padStart(2, '0') + ':' + 
+                  String(today.getSeconds()).padStart(2, '0');
+
+  const headers = [
+    'Id', 'Symbol', 'Name', 'Display Symbol', 'Exchange', 'Portfolio', 'Currency',
+    'Shares Owned', 'Cost Per Share', 'Commission', 'Transaction Date', 'Transaction Time',
+    'Purchase Exchange Rate', 'Purchase Exchange Currencies', 'Type', 'Accounting',
+    'Accounting Execution Ids', 'Notes', 'OutgoingCashLink'
+  ];
+  
+  let csv = headers.join(',') + '\n';
+  let id = 1;
+
+  list.forEach(s => {
+    const symbolNS = s.sym + '.NS';
+    const companyName = s.sym;
+    
+    // Row 1: ખાલી symbol info
+    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","","","","","","","","","","","",""\n`;
+    id++;
+    
+    // Row 2: Buy — 1 share
+    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","1","${s.entry.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
+    id++;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  const dlDate = String(today.getFullYear()) + '-' + 
+                 String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                 String(today.getDate()).padStart(2, '0');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'MSP-Portfolios-' + dlDate + '.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા (1 share each)!\n\nPortfolio tracker માં import કરો.');
+}
+
 function analyze() {
   const out = [];
   for (const sym in stockData) {
@@ -489,7 +557,9 @@ function analyze() {
     if (d.length < MIN_DAYS) continue;
     const r = calc(sym, d);
     if (!r) continue;
-    if (r.score >= MIN_SCORE && r.rsi >= 35 && r.rsi <= 70) out.push(r);
+    if (r.score >= MIN_SCORE && r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR) {
+      out.push(r);
+    }
   }
   out.sort((a, b) => b.score - a.score);
   allStocks = out;
@@ -637,7 +707,7 @@ function openGoogleGraph(symbol) { window.open('https://www.google.com/search?q=
 function render(list) {
   const res = document.getElementById('results');
   if (list.length === 0) {
-    res.innerHTML = '<div class="empty">❌ આજે ' + MIN_SCORE + '+ સ્કોરવાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
+    res.innerHTML = '<div class="empty">❌ આજે ' + MIN_SCORE + '+ સ્કોર + RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
     return;
   }
   let filtered = list;
@@ -656,6 +726,7 @@ function render(list) {
   let h = `<div style="background:#f1f8e9;border-left:5px solid #43a047;border-radius:10px;padding:14px;margin-bottom:14px;">
     <h2 style="color:#1b5e20;font-size:16px;margin-bottom:6px;">${title} — ${filtered.length} શેર</h2>
     <div style="color:#558b2f;font-size:13px;">📅 તારીખ: <b>${dateInfo.formatted}</b></div>
+    <div style="color:#2e7d32;font-size:11px;margin-top:4px;">🔒 Filter: Score 75+ | RSI 40-65 | R:R 1.5+</div>
   </div>`;
 
   filtered.slice(0, 50).forEach((s, i) => {
@@ -668,6 +739,7 @@ function render(list) {
       <div style="margin-bottom:6px;">
         <span class="safe-badge">🛡️ SL 3% | Target ${s.profitPct.toFixed(1)}%</span>
         <span class="safe-badge" style="margin-left:4px;background:${s.macdBullish ? '#c8e6c9' : '#ffcdd2'};color:${s.macdBullish ? '#1b5e20' : '#c62828'};">MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}</span>
+        <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
       </div>
       <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
       <div class="cd">
@@ -677,7 +749,7 @@ function render(list) {
         <div class="d"><div class="dl">Target1</div><div class="dv g">₹${s.t1.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Target2</div><div class="dv g">₹${s.t2.toFixed(2)}</div></div>
         <div class="d"><div class="dl">નફો %</div><div class="dv g">${s.profitPct.toFixed(1)}%</div></div>
-        <div class="d"><div class="dl">R:R</div><div class="dv">${s.rr.toFixed(2)}</div></div>
+        <div class="d"><div class="dl">R:R</div><div class="dv g">${s.rr.toFixed(2)}</div></div>
         <div class="d"><div class="dl">RSI</div><div class="dv">${s.rsi.toFixed(0)}</div></div>
         <div class="d"><div class="dl">MACD</div><div class="dv ${s.macdBullish ? 'g' : 'r'}">${s.histogram.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Close%</div><div class="dv ${s.closePos >= 70 ? 'g' : 'o'}">${s.closePos.toFixed(0)}%</div></div>
@@ -708,7 +780,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const GH_DEFAULTS = { owner: 'bhavikpeepee02-8966', repo: 'Bvkdatabkp', token: '', path: 'nse-scanner-macd-pro.json' };
-const GH_SETTINGS_KEY = 'ghSyncSettingsV4_' + GH_DEFAULTS.path;
+const GH_SETTINGS_KEY = 'ghSyncSettingsV6_' + GH_DEFAULTS.path;
 
 async function collectAllData() {
   const stocks = await getDB(STORE, 'all') || {};
