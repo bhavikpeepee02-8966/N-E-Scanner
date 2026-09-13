@@ -746,10 +746,17 @@ function calc(sym, d) {
     entry: price, sl, t1, t2, rr, profitPct,
     macdLine, signalLine, histogram, macdBullish,
     confirmAbove: last.h, freshBreakout, brk, breakoutAge,
-    supportEntry, supportSL, supportProfitPct
+    supportEntry, supportSL, supportProfitPct,
+    volume: last.v, avgVolume: avgV, confirmVolOk: vR >= 1.2
   };
 }
 
+function formatVol(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  if (n >= 100000) return (n / 100000).toFixed(1) + 'L';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(Math.round(n));
+}
 function ema(a, p) { if (a.length < p) return null; const k = 2 / (p + 1); let e = a.slice(0, p).reduce((x, y) => x + y, 0) / p; for (let i = p; i < a.length; i++) e = a[i] * k + e * (1 - k); return e; }
 function calcRSI(c, p) { if (c.length < p + 1) return 50; let g = 0, l = 0; for (let i = c.length - p; i < c.length; i++) { const df = c[i] - c[i - 1]; if (df >= 0) g += df; else l -= df; } if (l === 0) return 100; return 100 - 100 / (1 + (g / p) / (l / p)); }
 function calcATR(d, p) { if (d.length < p + 1) return 0; let s = 0; for (let i = d.length - p; i < d.length; i++) { s += Math.max(d[i].h - d[i].l, Math.abs(d[i].h - d[i - 1].c), Math.abs(d[i].l - d[i - 1].c)); } return s / p; }
@@ -813,7 +820,8 @@ function render(list) {
         <span class="safe-badge" style="margin-left:4px;background:${s.macdBullish ? '#c8e6c9' : '#ffcdd2'};color:${s.macdBullish ? '#1b5e20' : '#c62828'};">MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}</span>
         <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
       </div>
-      <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
+      <div style="font-size:11.5px;color:#e65100;margin-bottom:4px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
+      <div style="font-size:11.5px;margin-bottom:8px;color:${s.confirmVolOk ? '#2e7d32' : '#e65100'};">${s.confirmVolOk ? '✅' : '⚠️'} Volume: ${formatVol(s.volume)} (Avg ${formatVol(s.avgVolume)}) — ${s.vR.toFixed(1)}x${s.confirmVolOk ? '' : ' (Weak — Fake Breakout શક્ય)'}</div>
       ${s.brk ? `<div style="font-size:11.5px;margin-bottom:8px;color:${s.breakoutAge === 0 ? '#2e7d32' : (s.breakoutAge === 1 ? '#1565c0' : '#558b2f')};">${s.breakoutAge === 0 ? '🆕 આજનું Breakout' : (s.breakoutAge === 1 ? '📈 ગઈકાલનું Breakout — હજુ ચાલુ' : '✅ Breakout (તાજું ચોક્કસ ચકાસી ના શકાયું)')}</div>` : ''}
       <div class="cd">
         <div class="d"><div class="dl">ભાવ</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
