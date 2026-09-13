@@ -70,6 +70,8 @@
   .s { padding: 3px 8px; border-radius: 12px; font-size: 10px; background: #c8e6c9; color: #1b5e20; font-weight: bold; }
   .s.no { background: #eeeeee; color: #757575; }
   .s.warn { background: #ffe0b2; color: #e65100; }
+  .support-toggle { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #c5e1a5; font-size: 11.5px; color: #1565c0; text-align: center; cursor: pointer; }
+  .support-panel { margin-top: 6px; }
   .empty { text-align: center; padding: 20px; color: #558b2f; font-size: 13px; line-height: 1.5; }
   .load { text-align: center; padding: 20px; color: #2e7d32; font-size: 14px; line-height: 1.5; }
   .spin { border: 4px solid #e8f5e9; border-top: 4px solid #43a047; border-radius: 50%; width: 40px; height: 40px; animation: sp 1s linear infinite; margin: 0 auto 10px; }
@@ -202,6 +204,7 @@ let stockData = {};
 let allStocks = [];
 let currentFilter = 'all';
 let searchTerm = '';
+let dataGap = 0;
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -230,27 +233,53 @@ function todayIsoLocal() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
+// Bhavcopy Coverage Gap: સાચવેલી તારીખો વચ્ચે કેટલા weekday ખૂટે છે (રજા સિવાય પણ ગણાય, approx)
+function parseYYYYMMDD(s) { return new Date(Number(s.slice(0,4)), Number(s.slice(4,6)) - 1, Number(s.slice(6,8))); }
+function detectGap(dates) {
+  if (!dates || dates.length < 2) return 0;
+  let maxGap = 0;
+  for (let i = 1; i < dates.length; i++) {
+    const d1 = parseYYYYMMDD(dates[i-1]);
+    const d2 = parseYYYYMMDD(dates[i]);
+    let missing = 0;
+    const cur = new Date(d1);
+    cur.setDate(cur.getDate() + 1);
+    while (cur < d2) {
+      const wd = cur.getDay();
+      if (wd !== 0 && wd !== 6) missing++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (missing > maxGap) maxGap = missing;
+  }
+  return maxGap;
+}
+
 async function handleMultiZip(event, mode) {
   const files = Array.from(event.target.files);
   if (files.length === 0) return;
   const res = document.getElementById('results');
   res.innerHTML = `<div class="load"><div class="spin"></div>${files.length} ZIP મળી<br>પ્રોસેસ શરૂ...</div>`;
+  const skippedFiles = []; // {name, reason} — user ને દેખાડવા માટે
   try {
     let existingData = await getDB(STORE, 'all') || {};
     let latestDate = '';
     for (let f = 0; f < files.length; f++) {
       const file = files[f];
       res.innerHTML = `<div class="load"><div class="spin"></div>ફાઈલ ${f+1} / ${files.length}<br><small>${file.name}</small></div>`;
+      let fileFoundCsv = false;
       try {
         const zip = await JSZip.loadAsync(file);
         const csvs = Object.keys(zip.files).filter(n => n.toLowerCase().endsWith('.csv') && n.toLowerCase().includes('bhavcopy'));
+        if (csvs.length === 0) { skippedFiles.push({ name: file.name, reason: 'BhavCopy CSV ના મળી' }); }
         for (const fn of csvs) {
+          fileFoundCsv = true;
+          let fileRowsAdded = 0;
           const content = await zip.files[fn].async('string');
           const dm = fn.match(/(\d{8})/);
           const date = dm ? dm[1] : '';
           if (date > latestDate) latestDate = date;
           const lines = content.split('\n');
-          if (lines.length < 2) continue;
+          if (lines.length < 2) { skippedFiles.push({ name: file.name, reason: 'CSV ખાલી છે' }); continue; }
           const h = lines[0].split(',').map(s => s.trim().replace(/"/g, ''));
           const iSym = h.indexOf('TckrSymb');
           const iSer = h.indexOf('SctySrs');
@@ -260,11 +289,11 @@ async function handleMultiZip(event, mode) {
           const iCl = h.indexOf('ClsPric');
           const iVol = h.indexOf('TtlTradgVol');
           const iDeliv = h.indexOf('DELIV_PER') !== -1 ? h.indexOf('DELIV_PER') : h.indexOf('%DELIVQTY');
-          if (iSym === -1 || iCl === -1) continue;
+          if (iSym === -1 || iCl === -1) { skippedFiles.push({ name: file.name, reason: 'જરૂરી કોલમ (Symbol/Close) ના મળી' }); continue; }
           for (let i = 1; i < lines.length; i++) {
             const p = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
             if (p.length < h.length) continue;
-            if (p[iSer] !== 'EQ') continue;
+            if (iSer !== -1 && p[iSer] !== 'EQ') continue;
             const c = parseFloat(p[iCl]);
             const v = parseFloat(p[iVol]);
             if (isNaN(c) || isNaN(v)) continue;
@@ -280,9 +309,11 @@ async function handleMultiZip(event, mode) {
               c, v,
               dp: (iDeliv !== -1 && p[iDeliv] !== undefined) ? parseFloat(p[iDeliv]) : undefined
             });
+            fileRowsAdded++;
           }
+          if (fileRowsAdded === 0) { skippedFiles.push({ name: file.name, reason: 'આ તારીખ (' + date + ') નો ડેટા પહેલેથી લોડ થયેલો છે' }); }
         }
-      } catch (err) { console.log('Error:', file.name, err); }
+      } catch (err) { skippedFiles.push({ name: file.name, reason: err.message }); console.log('Error:', file.name, err); }
     }
     stockData = existingData;
     const allDates = new Set();
@@ -300,13 +331,15 @@ async function handleMultiZip(event, mode) {
     for (const sym in stockData) { stockData[sym].sort((a, b) => a.date.localeCompare(b.date)); }
     for (const sym in stockData) { if (stockData[sym].length === 0) delete stockData[sym]; }
     document.getElementById('totalDays').textContent = keptDates.length;
+    dataGap = detectGap(keptDates);
     res.innerHTML = '<div class="load"><div class="spin"></div>ડેટા સેવ થાય છે...</div>';
     await saveDB(STORE, 'all', stockData);
     await saveDB(META, 'info', {
       days: keptDates.length,
       stocks: Object.keys(stockData).length,
       dateRange: keptDates.length > 0 ? keptDates[0] + ' → ' + keptDates[keptDates.length - 1] : '-',
-      removed: removedCount
+      removed: removedCount,
+      gap: dataGap
     });
     if (latestDate) { await checkPreviousSignals(latestDate); }
     updateStatus();
@@ -314,12 +347,18 @@ async function handleMultiZip(event, mode) {
     if (allStocks.length > 0 && latestDate) { await saveSignals(allStocks, latestDate); }
     pushToCloud(true);
     await refreshReminder();
+    if (skippedFiles.length > 0) {
+      const list = skippedFiles.map(s => `<li><b>${s.name}</b>: ${s.reason}</li>`).join('');
+      document.getElementById('reminderBanner').innerHTML += `<div class="reminder warn">⚠️ ${files.length} માંથી ${skippedFiles.length} ફાઈલ પ્રોસેસ ના થઈ:<ul style="margin:6px 0 0 18px;">${list}</ul></div>`;
+    }
   } catch (err) {
     res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>';
   }
 }
 
 async function saveSignals(stocks, date) {
+  const existing = await getDB(SIGNALS, 'signal_' + date);
+  if (existing) return; // આ દિવસ પહેલેથી saved છે — ફરી pending ના કરો
   const buyStocks = stocks.filter(s => s.score >= MIN_SCORE);
   const data = {
     date: date,
@@ -338,26 +377,30 @@ async function checkPreviousSignals(currentDate) {
   for (const sigData of allSignals) {
     if (!sigData || !sigData.stocks) continue;
     if (sigData.date >= currentDate) continue;
+    let sigChanged = false;
     for (const sig of sigData.stocks) {
       if (sig.status !== 'pending') { results.push(sig); continue; }
       const stock = stockData[sig.sym];
       if (!stock) continue;
       const newDays = stock.filter(x => x.date > sigData.date);
+      if (newDays.length === 0) { sig.status = 'expired'; sigChanged = true; results.push(sig); continue; } // MAX_DAYS વિન્ડો બહાર નીકળી ગયું — હવે ક્યારેય resolve નહીં થાય
       for (const day of newDays) {
-        if (day.h >= sig.t1) { sig.status = 'target'; sig.exitPrice = sig.t1; sig.profit = ((sig.t1 - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; break; }
-        if (day.l <= sig.sl) { sig.status = 'sl'; sig.exitPrice = sig.sl; sig.profit = ((sig.sl - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; break; }
+        if (day.l <= sig.sl) { sig.status = 'sl'; sig.exitPrice = sig.sl; sig.profit = ((sig.sl - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; sigChanged = true; break; } // SL પહેલા ચેક — conservative
+        if (day.h >= sig.t1) { sig.status = 'target'; sig.exitPrice = sig.t1; sig.profit = ((sig.t1 - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; sigChanged = true; break; }
       }
       results.push(sig);
     }
+    if (sigChanged) await saveDB(SIGNALS, 'signal_' + sigData.date, sigData); // PATCH: mutation ને IndexedDB માં ખરેખર save કરો
   }
   if (results.length === 0) return;
   const wins = results.filter(r => r.status === 'target').length;
   const losses = results.filter(r => r.status === 'sl').length;
   const pending = results.filter(r => r.status === 'pending').length;
+  const expired = results.filter(r => r.status === 'expired').length;
   const total = wins + losses;
   const winRate = total > 0 ? (wins / total * 100).toFixed(1) : 0;
   const totalProfit = results.reduce((sum, r) => sum + (r.profit || 0), 0);
-  renderTracking({ results, stats: { total: results.length, wins, losses, pending, winRate, totalProfit: totalProfit.toFixed(2) } });
+  renderTracking({ results, stats: { total: results.length, wins, losses, pending, expired, winRate, totalProfit: totalProfit.toFixed(2) } });
 }
 
 function renderTracking(data) {
@@ -397,7 +440,7 @@ async function refreshReminder() {
   const today = new Date();
   const day = today.getDay();
   const hour = today.getHours();
-  const todayStr = today.toISOString().split('T')[0].replace(/-/g, '');
+  const todayStr = todayIsoLocal().replace(/-/g, '');
   let html = '';
   if (day === 0 || day === 6) {
     html = `<div class="reminder info">🎉 આજે Weekend છે — Market બંધ</div>`;
@@ -430,6 +473,7 @@ async function loadFromDB() {
     if (!data || Object.keys(data).length === 0) { res.innerHTML = '<div class="empty">📭 કોઈ ડેટા નથી.</div>'; return; }
     stockData = data;
     const m = await getDB(META, 'info') || {};
+    dataGap = m.gap || 0;
     document.getElementById('totalDays').textContent = m.days || '?';
     updateStatus();
     analyze();
@@ -556,7 +600,7 @@ function analyze() {
     if (d.length < MIN_DAYS) continue;
     const r = calc(sym, d);
     if (!r) continue;
-    if (r.score >= MIN_SCORE && r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR) {
+    if (r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR && r.freshBreakout) {
       out.push(r);
     }
   }
@@ -607,6 +651,20 @@ function calc(sym, d) {
   const vR = last.v / avgV;
   const brk = price > high20val;
   const atr = calcATR(d, 14);
+
+  // Freshness Indicator: breakout છેલ્લા 1-2 દિવસમાં જ થયો હોય તો જ ગણવો — જૂનું, લાંબા સમયથી ચાલુ breakout બતાવવો નહીં
+  let freshBreakout = true;
+  let breakoutAge = null; // 0 = આજે, 1 = ગઈકાલે, null = ચકાસી ના શકાયું / breakout નથી
+  if (brk && d.length >= 23) {
+    breakoutAge = -1;
+    for (let back = 0; back <= 2; back++) {
+      const idx = d.length - 1 - back;
+      const win = d.slice(idx - 20, idx);
+      const priorHigh = Math.max(...win.map(x => x.h));
+      if (d[idx].c > priorHigh) { breakoutAge = back; break; }
+    }
+    freshBreakout = breakoutAge !== -1 && breakoutAge <= 1;
+  }
 
   let score = 0;
   const sig = [];
@@ -676,11 +734,19 @@ function calc(sym, d) {
   const rr = risk > 0 ? reward / risk : 0;
   const profitPct = ((t1 - price) / price) * 100;
 
+  // Support/Dip Entry: છેલ્લા 10 દિવસના સૌથી નીચા ભાવે વૈકલ્પિક entry, SL પહોળું (Confirm Entry કરતાં વહેલું)
+  const supportWindow = d.slice(-10);
+  const supportEntry = Math.min(...supportWindow.map(x => x.l));
+  const SUPPORT_SL_PCT = SL_PCT + 2;
+  const supportSL = supportEntry * (1 - SUPPORT_SL_PCT / 100);
+  const supportProfitPct = supportEntry > 0 ? ((t1 - supportEntry) / supportEntry) * 100 : 0;
+
   return {
     sym, price, score, rsi, vR, sig, chg, ma20, streak, closePos,
     entry: price, sl, t1, t2, rr, profitPct,
     macdLine, signalLine, histogram, macdBullish,
-    confirmAbove: last.h
+    confirmAbove: last.h, freshBreakout, brk, breakoutAge,
+    supportEntry, supportSL, supportProfitPct
   };
 }
 
@@ -702,11 +768,17 @@ function filterStocks(type) {
 
 function searchStock() { searchTerm = document.getElementById('searchBox').value.trim().toUpperCase(); render(allStocks); }
 function openGoogleGraph(symbol) { window.open('https://www.google.com/search?q=NSE:' + symbol + '+share+price', '_blank'); }
+function toggleSupport(el) {
+  const panel = el.nextElementSibling;
+  const showing = panel.style.display !== 'none';
+  panel.style.display = showing ? 'none' : 'block';
+  el.textContent = showing ? '🔽 Support/Dip Entry જુઓ (વૈકલ્પિક, વહેલું entry)' : '🔼 Support/Dip Entry છુપાવો';
+}
 
 function render(list) {
   const res = document.getElementById('results');
   if (list.length === 0) {
-    res.innerHTML = '<div class="empty">❌ આજે ' + MIN_SCORE + '+ સ્કોર + RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
+    res.innerHTML = '<div class="empty">❌ RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ + તાજું Breakout વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
     return;
   }
   let filtered = list;
@@ -726,6 +798,7 @@ function render(list) {
     <h2 style="color:#1b5e20;font-size:16px;margin-bottom:6px;">${title} — ${filtered.length} શેર</h2>
     <div style="color:#558b2f;font-size:13px;">📅 તારીખ: <b>${dateInfo.formatted}</b></div>
     <div style="color:#2e7d32;font-size:11px;margin-top:4px;">🔒 Filter: Score 75+ | RSI 40-65 | R:R 1.5+</div>
+    ${dataGap >= 2 ? `<div style="color:#c62828;font-size:12px;margin-top:6px;">⚠️ ${dataGap} દિવસ ખૂટે છે — MACD ખોટું હોઈ શકે</div>` : ''}
   </div>`;
 
   filtered.slice(0, 50).forEach((s, i) => {
@@ -741,6 +814,7 @@ function render(list) {
         <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
       </div>
       <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
+      ${s.brk ? `<div style="font-size:11.5px;margin-bottom:8px;color:${s.breakoutAge === 0 ? '#2e7d32' : (s.breakoutAge === 1 ? '#1565c0' : '#558b2f')};">${s.breakoutAge === 0 ? '🆕 આજનું Breakout' : (s.breakoutAge === 1 ? '📈 ગઈકાલનું Breakout — હજુ ચાલુ' : '✅ Breakout (તાજું ચોક્કસ ચકાસી ના શકાયું)')}</div>` : ''}
       <div class="cd">
         <div class="d"><div class="dl">ભાવ</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Entry</div><div class="dv g">₹${s.entry.toFixed(2)}</div></div>
@@ -756,9 +830,16 @@ function render(list) {
         <div class="d"><div class="dl">Streak</div><div class="dv">${s.streak > 0 ? s.streak + ' દિ' : '—'}</div></div>
       </div>
       <div class="sig">${s.sig.map(x => `<span class="s ${x.ok ? '' : (x.warn ? 'warn' : 'no')}">${x.t}</span>`).join('')}</div>
+      <div class="support-toggle" onclick="toggleSupport(this)">🔽 Support/Dip Entry જુઓ (વૈકલ્પિક, વહેલું entry)</div>
+      <div class="support-panel" style="display:none;">
+        <div class="cd">
+          <div class="d"><div class="dl">Support Entry</div><div class="dv g">₹${s.supportEntry.toFixed(2)}</div></div>
+          <div class="d"><div class="dl">SL (પહોળું)</div><div class="dv r">₹${s.supportSL.toFixed(2)}</div></div>
+          <div class="d"><div class="dl">નફો %</div><div class="dv g">${s.supportProfitPct.toFixed(1)}%</div></div>
+        </div>
+      </div>
     </div>`;
   });
-  h += '</div>';
   res.innerHTML = h;
 }
 
@@ -807,7 +888,7 @@ const ghSyncStatus = document.getElementById('ghSyncStatus');
   ghOwnerInput.value = s.owner || GH_DEFAULTS.owner;
   ghRepoInput.value = s.repo || GH_DEFAULTS.repo;
   ghTokenInput.value = s.token || GH_DEFAULTS.token;
-  ghPathInput.value = GH_DEFAULTS.path;
+  ghPathInput.value = s.path || GH_DEFAULTS.path;
 })();
 
 function currentGhConfig() {
