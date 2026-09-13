@@ -780,6 +780,7 @@ if ('serviceWorker' in navigator) {
 
 const GH_DEFAULTS = { owner: 'bhavikpeepee02-8966', repo: 'Bvkdatabkp', token: '', path: 'nse-scanner-macd-pro.json' };
 const GH_SETTINGS_KEY = 'ghSyncSettingsV7_' + GH_DEFAULTS.path;
+let syncInFlight = false; // એક સાથે 2 sync ના ચાલે એ માટે
 
 async function collectAllData() {
   const stocks = await getDB(STORE, 'all') || {};
@@ -818,24 +819,51 @@ async function pushToCloud(silent) {
   const cfg = currentGhConfig();
   if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) { if (!silent) setGhStatus('❌ Username, Repo, Token ભરો.', false); return; }
   saveGhSettings({ owner: cfg.owner, repo: cfg.repo, token: cfg.token, path: cfg.path });
+
+  // એક જ સમયે 2 sync ના ચાલે (race condition રોકવા — 422 "sha wasn't supplied" નું મુખ્ય કારણ આ જ હતું)
+  if (syncInFlight) { if (!silent) setGhStatus('⏳ પહેલેથી sync ચાલુ છે, રાહ જુઓ...'); return; }
+  syncInFlight = true;
+
   if (!silent) setGhStatus('⏳ Save થાય છે...');
   try {
     const dataStr = JSON.stringify(await collectAllData());
     const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-    let sha = undefined;
-    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' } });
-    if (getRes.status === 200) { const j = await getRes.json(); sha = j.sha; }
-    else if (getRes.status !== 404) throw new Error('Read error: ' + getRes.status);
-    const putRes = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Auto backup ' + new Date().toISOString(), content: btoa(unescape(encodeURIComponent(dataStr))), sha })
-    });
+
+    async function attemptSave() {
+      let sha = undefined;
+      const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.status === 200) { const j = await getRes.json(); sha = j.sha; }
+      else if (getRes.status !== 404) throw new Error('Read error: ' + getRes.status);
+      return fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Auto backup ' + new Date().toISOString(), content: btoa(unescape(encodeURIComponent(dataStr))), sha })
+      });
+    }
+
+    let putRes = await attemptSave();
+    if (!putRes.ok && putRes.status === 422) {
+      // sha stale/missing હતું (બીજી concurrent request વચ્ચે ફાઈલ બની ગઈ) — તાજું sha લઈને 1 વાર auto-retry
+      await new Promise(r => setTimeout(r, 400));
+      putRes = await attemptSave();
+    }
     if (!putRes.ok) { const t = await putRes.text(); throw new Error('Save error: ' + putRes.status + ' ' + t.slice(0, 150)); }
-    setGhStatus('✅ Auto-sync (' + new Date().toLocaleString('gu-IN') + ')', true);
+
+    const now = new Date();
+    localStorage.setItem(GH_SETTINGS_KEY + '_lastSync', now.toISOString());
+    setGhStatus('✅ Auto-sync (' + now.toLocaleString('gu-IN') + ')', true);
   } catch (err) { setGhStatus('❌ Auto-sync નિષ્ફળ: ' + err.message, false); }
+  finally { syncInFlight = false; }
 }
 document.getElementById('ghSaveBtn').addEventListener('click', () => pushToCloud(false));
+
+function showLastSyncTime() {
+  const t = localStorage.getItem(GH_SETTINGS_KEY + '_lastSync');
+  if (t) {
+    try { setGhStatus('છેલ્લે sync: ' + new Date(t).toLocaleString('gu-IN')); } catch (e) {}
+  }
+}
+showLastSyncTime();
 
 document.getElementById('ghRestoreBtn').addEventListener('click', async () => {
   const cfg = currentGhConfig();
