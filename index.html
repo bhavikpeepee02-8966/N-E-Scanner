@@ -80,6 +80,9 @@
   .track-card.win { border-left-color: #2e7d32; background: #f1f8e9; }
   .track-card.loss { border-left-color: #c62828; background: #ffebee; }
   .track-card.pending { border-left-color: #f57c00; background: #fff8e1; }
+  .track-card.entryhit { border-left-color: #2e7d32; background: #e8f5e9; }
+  .track-card.weak { border-left-color: #fbc02d; background: #fffde7; }
+  .track-card.noentry { border-left-color: #9e9e9e; background: #fafafa; }
   .track-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
   .track-sym { font-size: 14px; font-weight: bold; color: #1b5e20; }
   .track-profit { font-size: 14px; font-weight: bold; }
@@ -112,9 +115,9 @@
 <body>
 <div class="container">
   <h1>🛡️ NSE Scanner - MACD Safe Mode Pro</h1>
-  <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Portfolio Track</p>
+  <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Portfolio + Entry Tracker</p>
 
-  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Portfolio Export (1 Share, Confirm Entry)</div>
+  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Volume 1.5x+ | Entry Auto-Track</div>
 
   <div id="reminderBanner"></div>
   <div id="dataStatus" class="status">📊 હાલ કોઈ ડેટા નથી</div>
@@ -137,7 +140,7 @@
     <input type="file" id="zipDaily" accept=".zip" onchange="handleMultiZip(event, 'daily')">
     <div class="ico">📥</div>
     <div class="txt">રોજ 1 ZIP ઉમેરો (Market બંધ પછી)</div>
-    <div class="sm">નવો દિવસ + Signal Result</div>
+    <div class="sm">નવો દિવસ + Entry Check</div>
   </label>
 
   <div class="btns">
@@ -154,6 +157,7 @@
     <div class="stat clickable" id="statStrong" onclick="filterStocks('strong')"><div class="n" id="strongBuys" style="color:#43a047;">0</div><div class="l">Strong Buy (100+)</div></div>
   </div>
 
+  <div id="entryTracker"></div>
   <div id="trackingResult"></div>
   <input type="text" id="searchBox" class="search-box" placeholder="🔍 શેર શોધો (જેમ કે RELIANCE, TCS)" oninput="searchStock()">
   <div id="results"><div class="empty">📂 ઉપર ZIP ફાઈલ અપલોડ કરો</div></div>
@@ -199,6 +203,12 @@ const MIN_RR = 1.5;
 const RSI_MIN = 40;
 const RSI_MAX = 65;
 
+const REQUIRE_VOL_CONFIRM = true;
+const MAX_CHANGE_PCT = 10;
+const ATR_TARGET_MULT = 2;
+
+const ENTRY_VALID_DAYS = 5;
+
 let db = null;
 let stockData = {};
 let allStocks = [];
@@ -233,7 +243,6 @@ function todayIsoLocal() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-// Bhavcopy Coverage Gap: સાચવેલી તારીખો વચ્ચે કેટલા weekday ખૂટે છે (રજા સિવાય પણ ગણાય, approx)
 function parseYYYYMMDD(s) { return new Date(Number(s.slice(0,4)), Number(s.slice(4,6)) - 1, Number(s.slice(6,8))); }
 function detectGap(dates) {
   if (!dates || dates.length < 2) return 0;
@@ -259,10 +268,14 @@ async function handleMultiZip(event, mode) {
   if (files.length === 0) return;
   const res = document.getElementById('results');
   res.innerHTML = `<div class="load"><div class="spin"></div>${files.length} ZIP મળી<br>પ્રોસેસ શરૂ...</div>`;
-  const skippedFiles = []; // {name, reason} — user ને દેખાડવા માટે
+  const skippedFiles = [];
   try {
     let existingData = await getDB(STORE, 'all') || {};
     let latestDate = '';
+    for (const sym in existingData) {
+      const arr = existingData[sym];
+      if (arr.length > 0) { const d = arr[arr.length - 1].date; if (d > latestDate) latestDate = d; }
+    }
     for (let f = 0; f < files.length; f++) {
       const file = files[f];
       res.innerHTML = `<div class="load"><div class="spin"></div>ફાઈલ ${f+1} / ${files.length}<br><small>${file.name}</small></div>`;
@@ -277,6 +290,7 @@ async function handleMultiZip(event, mode) {
           const content = await zip.files[fn].async('string');
           const dm = fn.match(/(\d{8})/);
           const date = dm ? dm[1] : '';
+          if (!date) { skippedFiles.push({ name: file.name, reason: 'ફાઈલ નામમાંથી તારીખ ના મળી' }); continue; }
           if (date > latestDate) latestDate = date;
           const lines = content.split('\n');
           if (lines.length < 2) { skippedFiles.push({ name: file.name, reason: 'CSV ખાલી છે' }); continue; }
@@ -307,7 +321,7 @@ async function handleMultiZip(event, mode) {
               h: parseFloat(p[iHi]),
               l: parseFloat(p[iLo]),
               c, v,
-              dp: (iDeliv !== -1 && p[iDeliv] !== undefined) ? parseFloat(p[iDeliv]) : undefined
+              dp: (iDeliv !== -1 && p[iDeliv] !== undefined && p[iDeliv] !== null && p[iDeliv] !== '') ? parseFloat(p[iDeliv]) : undefined
             });
             fileRowsAdded++;
           }
@@ -358,17 +372,67 @@ async function handleMultiZip(event, mode) {
 
 async function saveSignals(stocks, date) {
   const existing = await getDB(SIGNALS, 'signal_' + date);
-  if (existing) return; // આ દિવસ પહેલેથી saved છે — ફરી pending ના કરો
+  if (existing) return;
   const buyStocks = stocks.filter(s => s.score >= MIN_SCORE);
   const data = {
     date: date,
-    stocks: buyStocks.slice(0, 20).map(s => ({
-      sym: s.sym, entry: s.entry, sl: s.sl, t1: s.t1, t2: s.t2,
-      score: s.score, rr: s.rr, profitPct: s.profitPct,
-      status: 'pending', exitPrice: null, profit: 0, resultDate: null
-    }))
+    stocks: buyStocks.slice(0, 20).map(s => {
+      const actualEntry = s.confirmAbove;
+      const targetPct = s.profitPct;
+      const newSl = actualEntry * (1 - SL_PCT / 100);
+      const newT1 = actualEntry * (1 + targetPct / 100);
+      const newT2 = newT1 * 1.05;
+      const newRR = (newT1 - actualEntry) / (actualEntry - newSl);
+      return {
+        sym: s.sym,
+        signalClose: s.price,
+        entry: actualEntry,
+        sl: newSl,
+        t1: newT1,
+        t2: newT2,
+        rr: newRR,
+        confirmAbove: s.confirmAbove,
+        requiredVolume: s.requiredVolume,
+        score: s.score,
+        profitPct: targetPct,
+        status: 'pending', exitPrice: null, profit: 0, resultDate: null,
+        entryStatus: 'waiting', entryDate: null, entryPrice: null, entryVolume: null,
+        daysWaited: 0
+      };
+    })
   };
   await saveDB(SIGNALS, 'signal_' + date, data);
+}
+
+function checkEntryConditions(sig, sigDate, newDays) {
+  if (sig.entryStatus !== 'waiting') return false;
+  let changed = false;
+  for (const day of newDays) {
+    sig.daysWaited = (sig.daysWaited || 0) + 1;
+    if (day.h >= sig.confirmAbove && day.v >= sig.requiredVolume) {
+      sig.entryStatus = 'hit';
+      sig.entryDate = day.date;
+      sig.entryPrice = sig.confirmAbove;
+      sig.entryVolume = day.v;
+      sig.status = 'entered';
+      changed = true;
+      break;
+    }
+    if (day.h >= sig.confirmAbove && day.v < sig.requiredVolume) {
+      sig.entryStatus = 'weak';
+      sig.entryDate = day.date;
+      sig.entryPrice = sig.confirmAbove;
+      sig.entryVolume = day.v;
+      changed = true;
+    }
+    if (sig.daysWaited >= ENTRY_VALID_DAYS) {
+      sig.entryStatus = 'expired';
+      sig.status = 'expired';
+      changed = true;
+      break;
+    }
+  }
+  return changed;
 }
 
 async function checkPreviousSignals(currentDate) {
@@ -379,28 +443,102 @@ async function checkPreviousSignals(currentDate) {
     if (sigData.date >= currentDate) continue;
     let sigChanged = false;
     for (const sig of sigData.stocks) {
-      if (sig.status !== 'pending') { results.push(sig); continue; }
       const stock = stockData[sig.sym];
-      if (!stock) continue;
-      const newDays = stock.filter(x => x.date > sigData.date);
-      if (newDays.length === 0) { sig.status = 'expired'; sigChanged = true; results.push(sig); continue; } // MAX_DAYS વિન્ડો બહાર નીકળી ગયું — હવે ક્યારેય resolve નહીં થાય
-      for (const day of newDays) {
-        if (day.l <= sig.sl) { sig.status = 'sl'; sig.exitPrice = sig.sl; sig.profit = ((sig.sl - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; sigChanged = true; break; } // SL પહેલા ચેક — conservative
-        if (day.h >= sig.t1) { sig.status = 'target'; sig.exitPrice = sig.t1; sig.profit = ((sig.t1 - sig.entry) / sig.entry) * 100; sig.resultDate = day.date; sigChanged = true; break; }
+      if (!stock) {
+        if (sig.status === 'pending') { sig.status = 'expired'; sig.entryStatus = 'expired'; sigChanged = true; }
+        results.push(sig); continue;
       }
+      const newDays = stock.filter(x => x.date > sigData.date);
+
+      if (sig.entryStatus === 'waiting' && newDays.length > 0) {
+        if (checkEntryConditions(sig, sigData.date, newDays)) sigChanged = true;
+      }
+
+      if (sig.entryStatus === 'hit' && sig.status === 'entered') {
+        const entryDate = sig.entryDate;
+        const actualEntry = sig.entryPrice || sig.entry;
+        const postEntryDays = stock.filter(x => x.date > entryDate);
+        for (const day of postEntryDays) {
+          if (day.l <= sig.sl) {
+            sig.status = 'sl'; sig.exitPrice = sig.sl;
+            sig.profit = ((sig.sl - actualEntry) / actualEntry) * 100;
+            sig.resultDate = day.date; sigChanged = true; break;
+          }
+          if (day.h >= sig.t1) {
+            sig.status = 'target'; sig.exitPrice = sig.t1;
+            sig.profit = ((sig.t1 - actualEntry) / actualEntry) * 100;
+            sig.resultDate = day.date; sigChanged = true; break;
+          }
+        }
+      }
+
+      if (sig.status !== 'pending' && sig.status !== 'entered' && !sig.entryStatus) {
+        sig.entryStatus = 'legacy';
+      }
+
       results.push(sig);
     }
-    if (sigChanged) await saveDB(SIGNALS, 'signal_' + sigData.date, sigData); // PATCH: mutation ને IndexedDB માં ખરેખર save કરો
+    if (sigChanged) await saveDB(SIGNALS, 'signal_' + sigData.date, sigData);
   }
   if (results.length === 0) return;
+  renderEntryTracker(results);
   const wins = results.filter(r => r.status === 'target').length;
   const losses = results.filter(r => r.status === 'sl').length;
-  const pending = results.filter(r => r.status === 'pending').length;
+  const pending = results.filter(r => r.status === 'pending' || r.status === 'entered').length;
   const expired = results.filter(r => r.status === 'expired').length;
   const total = wins + losses;
   const winRate = total > 0 ? (wins / total * 100).toFixed(1) : 0;
   const totalProfit = results.reduce((sum, r) => sum + (r.profit || 0), 0);
   renderTracking({ results, stats: { total: results.length, wins, losses, pending, expired, winRate, totalProfit: totalProfit.toFixed(2) } });
+}
+
+function renderEntryTracker(results) {
+  const el = document.getElementById('entryTracker');
+  const entrySigs = results.filter(r => r.entryStatus && r.entryStatus !== 'legacy');
+  if (entrySigs.length === 0) { el.innerHTML = ''; return; }
+
+  const hit = entrySigs.filter(r => r.entryStatus === 'hit').length;
+  const weak = entrySigs.filter(r => r.entryStatus === 'weak').length;
+  const waiting = entrySigs.filter(r => r.entryStatus === 'waiting').length;
+  const expired = entrySigs.filter(r => r.entryStatus === 'expired').length;
+
+  let h = `<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:14px;margin-bottom:14px;">
+    <h2 style="color:#e65100;font-size:16px;margin-bottom:10px;">🎯 Entry Tracker (Live)</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:#e8f5e9;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${hit}</div><div style="font-size:10px;color:#2e7d32;">🟢 ENTRY HIT</div></div>
+      <div style="background:#fffde7;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#f57c00;">${weak}</div><div style="font-size:10px;color:#f57c00;">🟡 WEAK (Vol ઓછું)</div></div>
+      <div style="background:#e3f2fd;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#1565c0;">${waiting}</div><div style="font-size:10px;color:#1565c0;">⏳ WAITING</div></div>
+      <div style="background:#f5f5f5;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#757575;">${expired}</div><div style="font-size:10px;color:#757575;">⌛ EXPIRED</div></div>
+    </div>`;
+
+  const sorted = [...entrySigs].sort((a, b) => (b.entryDate || '').localeCompare(a.entryDate || ''));
+
+  sorted.slice(0, 30).forEach(sig => {
+    let cardClass = 'pending';
+    let statusIcon = '⏳';
+    let statusText = 'WAITING';
+    let statusColor = '#1565c0';
+
+    if (sig.entryStatus === 'hit') { cardClass = 'entryhit'; statusIcon = '🟢'; statusText = 'ENTRY HIT — BUY'; statusColor = '#2e7d32'; }
+    else if (sig.entryStatus === 'weak') { cardClass = 'weak'; statusIcon = '🟡'; statusText = 'WEAK — Volume ઓછું'; statusColor = '#f57c00'; }
+    else if (sig.entryStatus === 'expired') { cardClass = 'noentry'; statusIcon = '⌛'; statusText = 'EXPIRED — 5 દિવસ પૂરા'; statusColor = '#757575'; }
+    else { cardClass = 'pending'; statusIcon = '⏳'; statusText = 'WAITING — ' + (ENTRY_VALID_DAYS - (sig.daysWaited || 0)) + ' દિવસ બાકી'; statusColor = '#1565c0'; }
+
+    const entryDateFmt = sig.entryDate ? (sig.entryDate.slice(6,8) + '-' + sig.entryDate.slice(4,6) + '-' + sig.entryDate.slice(0,4)) : '—';
+
+    h += `<div class="track-card ${cardClass}">
+      <div class="track-row">
+        <div class="track-sym">${statusIcon} ${sig.sym}</div>
+        <div style="font-size:12px;font-weight:bold;color:${statusColor};">${statusText}</div>
+      </div>
+      <div class="track-detail">🎯 Confirm Above: ₹${sig.confirmAbove.toFixed(2)} | 📊 Required Vol: ${Math.round(sig.requiredVolume).toLocaleString('en-IN')}</div>
+      ${sig.entryDate ? `<div class="track-detail">📅 Entry Date: ${entryDateFmt} | 💰 Entry Price: ₹${sig.entryPrice.toFixed(2)} | 📊 Entry Vol: ${Math.round(sig.entryVolume || 0).toLocaleString('en-IN')}</div>` : ''}
+      ${sig.status === 'target' ? `<div class="track-detail" style="color:#2e7d32;font-weight:bold;">✅ TARGET HIT — નફો +${sig.profit.toFixed(2)}%</div>` : ''}
+      ${sig.status === 'sl' ? `<div class="track-detail" style="color:#c62828;font-weight:bold;">❌ SL HIT — ખોટ ${sig.profit.toFixed(2)}%</div>` : ''}
+    </div>`;
+  });
+  h += `</div>`;
+  el.innerHTML = h;
 }
 
 function renderTracking(data) {
@@ -411,8 +549,9 @@ function renderTracking(data) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${s.wins}</div><div style="font-size:11px;color:#558b2f;">✅ Target</div></div>
       <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#c62828;">${s.losses}</div><div style="font-size:11px;color:#558b2f;">❌ SL</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#f57c00;">${s.pending}</div><div style="font-size:11px;color:#558b2f;">⏳ Pending</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${s.winRate}%</div><div style="font-size:11px;color:#558b2f;">🎯 Win Rate</div></div>
+      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#f57c00;">${s.pending}</div><div style="font-size:11px;color:#558b2f;">⏳ Active</div></div>
+      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#757575;">${s.expired}</div><div style="font-size:11px;color:#558b2f;">⌛ Expired</div></div>
+      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;grid-column:span 2;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${s.winRate}%</div><div style="font-size:11px;color:#558b2f;">🎯 Win Rate</div></div>
     </div>
     <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;">
       <div style="font-size:22px;font-weight:bold;color:${parseFloat(s.totalProfit) >= 0 ? '#2e7d32' : '#c62828'};">${parseFloat(s.totalProfit) >= 0 ? '+' : ''}${s.totalProfit}%</div>
@@ -478,7 +617,12 @@ async function loadFromDB() {
     updateStatus();
     analyze();
     const allSigs = await getAllDB(SIGNALS);
-    if (allSigs.length > 0) { const latest = allSigs[allSigs.length - 1]; await checkPreviousSignals(latest.date || '99999999'); }
+    if (allSigs.length > 0) {
+      const latestDataDate = (m.dateRange && m.dateRange !== '-') ? m.dateRange.split(' → ')[1] : '';
+      const latestSigDate = allSigs.reduce((mx, s) => (s && s.date && s.date > mx) ? s.date : mx, '');
+      const checkDate = (latestDataDate > latestSigDate ? latestDataDate : latestSigDate) || '99999999';
+      await checkPreviousSignals(checkDate);
+    }
   } catch (err) { res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>'; }
 }
 
@@ -492,6 +636,7 @@ async function deleteDB() {
   document.getElementById('strongBuys').textContent = '0';
   document.getElementById('results').innerHTML = '<div class="empty">🗑️ ડેટા ડિલીટ થયો</div>';
   document.getElementById('trackingResult').innerHTML = '';
+  document.getElementById('entryTracker').innerHTML = '';
   updateStatus();
   await refreshReminder();
 }
@@ -516,10 +661,60 @@ function exportExcel() {
   if (currentFilter === 'buy') filtered = allStocks.filter(s => s.score >= MIN_SCORE);
   else if (currentFilter === 'strong') filtered = allStocks.filter(s => s.score >= STRONG_SCORE);
   if (searchTerm) filtered = filtered.filter(s => s.sym.includes(searchTerm));
-  let csv = 'Date,Rank,Symbol,Score,Price,Entry,SL,Target1,Target2,Profit%,R:R,RSI,Close%,Change%,Volume,MACD,Streak\n';
+  if (filtered.length === 0) { alert('આ ફિલ્ટર/શોધમાં કોઈ શેર નથી — Export માટે કંઈ નથી'); return; }
+
+  const headers = [
+    'Date', 'Rank', 'Symbol', 'Score',
+    'Price', 'Entry', 'ConfirmAbove', 'SL', 'Target1', 'Target2',
+    'Profit%', 'R:R', 'RSI', 'Close%', 'Change%', 'Streak',
+    'ActualVol', 'AvgVol', 'RequiredVol_1.5x', 'VolRatio', 'VolOK',
+    'MACD_Hist', 'MACD_Line', 'Signal_Line', 'MACD_Bullish',
+    'Breakout', 'BreakoutAge', 'Delivery%',
+    'SupportEntry', 'SupportSL', 'SupportProfit%'
+  ];
+
+  let csv = headers.join(',') + '\n';
+
   filtered.slice(0, 50).forEach((s, i) => {
-    csv += `${dateInfo.formatted},${i + 1},${s.sym},${s.score},${s.price.toFixed(2)},${s.entry.toFixed(2)},${s.sl.toFixed(2)},${s.t1.toFixed(2)},${s.t2.toFixed(2)},${s.profitPct.toFixed(2)},${s.rr.toFixed(2)},${s.rsi.toFixed(0)},${s.closePos.toFixed(0)},${s.chg !== null ? s.chg.toFixed(2) : ''},${s.vR.toFixed(2)},${s.histogram.toFixed(2)},${s.streak}\n`;
+    const breakoutAgeTxt = s.brk
+      ? (s.breakoutAge === 0 ? 'Today' : (s.breakoutAge === 1 ? 'Yesterday' : 'Older'))
+      : 'No';
+    const row = [
+      dateInfo.formatted,
+      i + 1,
+      s.sym,
+      s.score,
+      s.price.toFixed(2),
+      s.entry.toFixed(2),
+      s.confirmAbove.toFixed(2),
+      s.sl.toFixed(2),
+      s.t1.toFixed(2),
+      s.t2.toFixed(2),
+      s.profitPct.toFixed(2),
+      s.rr.toFixed(2),
+      s.rsi.toFixed(0),
+      s.closePos.toFixed(0),
+      s.chg !== null ? s.chg.toFixed(2) : '',
+      s.streak,
+      Math.round(s.volume),
+      Math.round(s.avgVolume),
+      Math.round(s.requiredVolume),
+      s.vR.toFixed(2),
+      s.confirmVolOk ? 'YES' : 'NO',
+      s.histogram.toFixed(2),
+      s.macdLine.toFixed(2),
+      s.signalLine.toFixed(2),
+      s.macdBullish ? 'YES' : 'NO',
+      s.brk ? 'YES' : 'NO',
+      breakoutAgeTxt,
+      (s.dp !== undefined && s.dp !== null && !isNaN(s.dp)) ? s.dp.toFixed(1) : '',
+      s.supportEntry.toFixed(2),
+      s.supportSL.toFixed(2),
+      s.supportProfitPct.toFixed(2)
+    ];
+    csv += row.join(',') + '\n';
   });
+
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -531,57 +726,45 @@ function exportExcel() {
   document.body.removeChild(link);
 }
 
-// ============ PORTFOLIO EXPORT (MSP Format, Confirm Entry, 1 Share) ============
 function exportPortfolio() {
   if (allStocks.length === 0) { alert('પહેલા ડેટા લોડ કરો'); return; }
-
   let list = allStocks.filter(s => s.score >= STRONG_SCORE);
   if (list.length === 0) list = allStocks.slice(0, 10);
-
   const dateInfo = getLatestDate();
   const today = new Date();
-  
   let dateStr = '';
   if (dateInfo.raw && dateInfo.raw.length === 8) {
     dateStr = dateInfo.raw.slice(6, 8) + '-' + dateInfo.raw.slice(4, 6) + '-' + dateInfo.raw.slice(0, 4);
   } else {
-    dateStr = String(today.getDate()).padStart(2, '0') + '-' + 
-              String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+    dateStr = String(today.getDate()).padStart(2, '0') + '-' +
+              String(today.getMonth() + 1).padStart(2, '0') + '-' +
               today.getFullYear();
   }
   const gmtDate = dateStr + ' GMT+0530';
-  const timeStr = String(today.getHours()).padStart(2, '0') + ':' + 
-                  String(today.getMinutes()).padStart(2, '0') + ':' + 
+  const timeStr = String(today.getHours()).padStart(2, '0') + ':' +
+                  String(today.getMinutes()).padStart(2, '0') + ':' +
                   String(today.getSeconds()).padStart(2, '0');
-
   const headers = [
     'Id', 'Symbol', 'Name', 'Display Symbol', 'Exchange', 'Portfolio', 'Currency',
     'Shares Owned', 'Cost Per Share', 'Commission', 'Transaction Date', 'Transaction Time',
     'Purchase Exchange Rate', 'Purchase Exchange Currencies', 'Type', 'Accounting',
     'Accounting Execution Ids', 'Notes', 'OutgoingCashLink'
   ];
-  
   let csv = headers.join(',') + '\n';
   let id = 1;
-
   list.forEach(s => {
     const symbolNS = s.sym + '.NS';
     const companyName = s.sym;
-    
-    // Row 1: Symbol info
     csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","","","","","","","","","","","",""\n`;
     id++;
-    
-    // Row 2: Buy — 1 share, Confirm Entry price
     csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","1","${s.confirmAbove.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
     id++;
   });
-
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  const dlDate = String(today.getFullYear()) + '-' + 
-                 String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+  const dlDate = String(today.getFullYear()) + '-' +
+                 String(today.getMonth() + 1).padStart(2, '0') + '-' +
                  String(today.getDate()).padStart(2, '0');
   link.setAttribute('href', url);
   link.setAttribute('download', 'MSP-Portfolios-' + dlDate + '.csv');
@@ -589,8 +772,7 @@ function exportPortfolio() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-
-  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા (Confirm Entry Price, 1 share each)!');
+  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા!');
 }
 
 function analyze() {
@@ -600,9 +782,10 @@ function analyze() {
     if (d.length < MIN_DAYS) continue;
     const r = calc(sym, d);
     if (!r) continue;
-    if (r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR && r.freshBreakout) {
-      out.push(r);
-    }
+    if (!(r.brk && r.freshBreakout && r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR)) continue;
+    if (REQUIRE_VOL_CONFIRM && !r.confirmVolOk) continue;
+    if (r.chg !== null && r.chg > MAX_CHANGE_PCT) continue;
+    out.push(r);
   }
   out.sort((a, b) => b.score - a.score);
   allStocks = out;
@@ -652,28 +835,32 @@ function calc(sym, d) {
   const brk = price > high20val;
   const atr = calcATR(d, 14);
 
-  // Freshness Indicator: breakout છેલ્લા 1-2 દિવસમાં જ થયો હોય તો જ ગણવો — જૂનું, લાંબા સમયથી ચાલુ breakout બતાવવો નહીં
-  let freshBreakout = true;
-  let breakoutAge = null; // 0 = આજે, 1 = ગઈકાલે, null = ચકાસી ના શકાયું / breakout નથી
-  if (brk && d.length >= 23) {
-    breakoutAge = -1;
-    for (let back = 0; back <= 2; back++) {
-      const idx = d.length - 1 - back;
-      const win = d.slice(idx - 20, idx);
-      const priorHigh = Math.max(...win.map(x => x.h));
-      if (d[idx].c > priorHigh) { breakoutAge = back; break; }
+  let freshBreakout = false;
+  let breakoutAge = null;
+  if (brk) {
+    if (d.length >= 23) {
+      breakoutAge = -1;
+      for (let back = 0; back <= 2; back++) {
+        const idx = d.length - 1 - back;
+        const win = d.slice(idx - 20, idx);
+        const priorHigh = Math.max(...win.map(x => x.h));
+        if (d[idx].c > priorHigh) { breakoutAge = back; break; }
+      }
+      freshBreakout = breakoutAge !== -1 && breakoutAge <= 1;
+    } else {
+      freshBreakout = true;
+      breakoutAge = 0;
     }
-    freshBreakout = breakoutAge !== -1 && breakoutAge <= 1;
   }
 
   let score = 0;
   const sig = [];
 
-  if (e9 && e21 && e9 > e21) { score += 20; sig.push({ ok: 1, t: '✅ EMA9 > EMA21' }); }
+  if (e9 !== null && e21 !== null && e9 > e21) { score += 20; sig.push({ ok: 1, t: '✅ EMA9 > EMA21' }); }
   else sig.push({ ok: 0, t: '❌ EMA9 < EMA21' });
 
-  if (e50 && price > e50) { score += 15; sig.push({ ok: 1, t: '✅ 50 EMA ઉપર' }); }
-  else if (e50) sig.push({ ok: 0, t: '❌ 50 EMA નીચે' });
+  if (e50 !== null && price > e50) { score += 15; sig.push({ ok: 1, t: '✅ 50 EMA ઉપર' }); }
+  else if (e50 !== null) sig.push({ ok: 0, t: '❌ 50 EMA નીચે' });
   else sig.push({ ok: 0, t: '⚠️ 50 DMA ઓછો' });
 
   if (rsi >= 40 && rsi <= 65) { score += 12; sig.push({ ok: 1, t: `✅ RSI ${rsi.toFixed(0)}` }); }
@@ -712,20 +899,20 @@ function calc(sym, d) {
     }
   }
 
-  if (ma20 && price > ma20) { score += 10; sig.push({ ok: 1, t: '✅ 20 MA ઉપર' }); }
-  else if (ma20) sig.push({ ok: 0, t: '❌ 20 MA નીચે' });
+  if (ma20 !== null && price > ma20) { score += 10; sig.push({ ok: 1, t: '✅ 20 MA ઉપર' }); }
+  else if (ma20 !== null) sig.push({ ok: 0, t: '❌ 20 MA નીચે' });
 
   let streak = 0;
   for (let i = cl.length - 1; i >= 1; i--) { if (cl[i] > cl[i-1]) streak++; else break; }
   if (streak >= 2) { score += 5; sig.push({ ok: 1, t: `✅ ${streak} દિવસ સતત વધારો` }); }
 
-  if (last.dp !== undefined && !isNaN(last.dp)) {
+  if (last.dp !== undefined && last.dp !== null && !isNaN(last.dp)) {
     if (last.dp >= 50) { score += 5; sig.push({ ok: 1, t: `✅ Delivery ${last.dp.toFixed(0)}%` }); }
     else sig.push({ ok: 0, t: `❌ Delivery ${last.dp.toFixed(0)}%` });
   }
 
   const sl = price * (1 - SL_PCT / 100);
-  let t1 = high20val * 1.01;
+  let t1 = price + (atr * ATR_TARGET_MULT);
   if (t1 < price * (1 + TARGET_MIN / 100)) t1 = price * (1 + TARGET_MIN / 100);
   if (t1 > price * (1 + TARGET_MAX / 100)) t1 = price * (1 + TARGET_MAX / 100);
   const t2 = t1 * 1.05;
@@ -734,7 +921,6 @@ function calc(sym, d) {
   const rr = risk > 0 ? reward / risk : 0;
   const profitPct = ((t1 - price) / price) * 100;
 
-  // Support/Dip Entry: છેલ્લા 10 દિવસના સૌથી નીચા ભાવે વૈકલ્પિક entry, SL પહોળું (Confirm Entry કરતાં વહેલું)
   const supportWindow = d.slice(-10);
   const supportEntry = Math.min(...supportWindow.map(x => x.l));
   const SUPPORT_SL_PCT = SL_PCT + 2;
@@ -747,7 +933,8 @@ function calc(sym, d) {
     macdLine, signalLine, histogram, macdBullish,
     confirmAbove: last.h, freshBreakout, brk, breakoutAge,
     supportEntry, supportSL, supportProfitPct,
-    volume: last.v, avgVolume: avgV, confirmVolOk: vR >= 1.5, requiredVolume: avgV * 1.5
+    volume: last.v, avgVolume: avgV, confirmVolOk: vR >= 1.5, requiredVolume: avgV * 1.5,
+    dp: last.dp
   };
 }
 
@@ -783,7 +970,7 @@ function toggleSupport(el) {
 function render(list) {
   const res = document.getElementById('results');
   if (list.length === 0) {
-    res.innerHTML = '<div class="empty">❌ RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ + તાજું Breakout વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
+    res.innerHTML = '<div class="empty">❌ RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ + તાજું Breakout + Volume 1.5x+ વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
     return;
   }
   let filtered = list;
@@ -802,7 +989,7 @@ function render(list) {
   let h = `<div style="background:#f1f8e9;border-left:5px solid #43a047;border-radius:10px;padding:14px;margin-bottom:14px;">
     <h2 style="color:#1b5e20;font-size:16px;margin-bottom:6px;">${title} — ${filtered.length} શેર</h2>
     <div style="color:#558b2f;font-size:13px;">📅 તારીખ: <b>${dateInfo.formatted}</b></div>
-    <div style="color:#2e7d32;font-size:11px;margin-top:4px;">🔒 Filter: Score 75+ | RSI 40-65 | R:R 1.5+</div>
+    <div style="color:#2e7d32;font-size:11px;margin-top:4px;">🔒 Filter: Score 75+ | RSI 40-65 | R:R 1.5+ | Volume 1.5x+ | Change ≤ 10%</div>
     ${dataGap >= 2 ? `<div style="color:#c62828;font-size:12px;margin-top:6px;">⚠️ ${dataGap} દિવસ ખૂટે છે — MACD ખોટું હોઈ શકે</div>` : ''}
   </div>`;
 
@@ -819,7 +1006,7 @@ function render(list) {
         <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
       </div>
       <div style="font-size:11.5px;color:#e65100;margin-bottom:4px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
-      <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">${s.confirmVolOk ? '✅' : '⚠️'} જરૂરી Volume: ${formatVol(s.requiredVolume)}</div>
+      <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">${s.confirmVolOk ? '✅' : '⚠️'} Actual Volume: ${formatVol(s.volume)} | જરૂરી Volume: ${formatVol(s.requiredVolume)}</div>
       ${s.brk ? `<div style="font-size:11.5px;margin-bottom:8px;color:${s.breakoutAge === 0 ? '#2e7d32' : (s.breakoutAge === 1 ? '#1565c0' : '#558b2f')};">${s.breakoutAge === 0 ? '🆕 આજનું Breakout' : (s.breakoutAge === 1 ? '📈 ગઈકાલનું Breakout — હજુ ચાલુ' : '✅ Breakout (તાજું ચોક્કસ ચકાસી ના શકાયું)')}</div>` : ''}
       <div class="cd">
         <div class="d"><div class="dl">ભાવ</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
@@ -867,7 +1054,7 @@ if ('serviceWorker' in navigator) {
 
 const GH_DEFAULTS = { owner: 'bhavikpeepee02-8966', repo: 'Bvkdatabkp', token: '', path: 'nse-scanner-macd-pro.json' };
 const GH_SETTINGS_KEY = 'ghSyncSettingsV7_' + GH_DEFAULTS.path;
-let syncInFlight = false; // એક સાથે 2 sync ના ચાલે એ માટે
+let syncInFlight = false;
 
 async function collectAllData() {
   const stocks = await getDB(STORE, 'all') || {};
@@ -906,16 +1093,12 @@ async function pushToCloud(silent) {
   const cfg = currentGhConfig();
   if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) { if (!silent) setGhStatus('❌ Username, Repo, Token ભરો.', false); return; }
   saveGhSettings({ owner: cfg.owner, repo: cfg.repo, token: cfg.token, path: cfg.path });
-
-  // એક જ સમયે 2 sync ના ચાલે (race condition રોકવા — 422 "sha wasn't supplied" નું મુખ્ય કારણ આ જ હતું)
   if (syncInFlight) { if (!silent) setGhStatus('⏳ પહેલેથી sync ચાલુ છે, રાહ જુઓ...'); return; }
   syncInFlight = true;
-
   if (!silent) setGhStatus('⏳ Save થાય છે...');
   try {
     const dataStr = JSON.stringify(await collectAllData());
     const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-
     async function attemptSave() {
       let sha = undefined;
       const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' } });
@@ -927,15 +1110,12 @@ async function pushToCloud(silent) {
         body: JSON.stringify({ message: 'Auto backup ' + new Date().toISOString(), content: btoa(unescape(encodeURIComponent(dataStr))), sha })
       });
     }
-
     let putRes = await attemptSave();
     if (!putRes.ok && putRes.status === 422) {
-      // sha stale/missing હતું (બીજી concurrent request વચ્ચે ફાઈલ બની ગઈ) — તાજું sha લઈને 1 વાર auto-retry
       await new Promise(r => setTimeout(r, 400));
       putRes = await attemptSave();
     }
     if (!putRes.ok) { const t = await putRes.text(); throw new Error('Save error: ' + putRes.status + ' ' + t.slice(0, 150)); }
-
     const now = new Date();
     localStorage.setItem(GH_SETTINGS_KEY + '_lastSync', now.toISOString());
     setGhStatus('✅ Auto-sync (' + now.toLocaleString('gu-IN') + ')', true);
