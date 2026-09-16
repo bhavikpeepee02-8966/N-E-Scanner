@@ -126,7 +126,7 @@
     <h2>📥 BhavCopy ડાઉનલોડ કરો</h2>
     <a id="nseTodayLink" href="#" target="_blank">📅 આજની (સીધી) ફાઈલ ડાઉનલોડ</a>
     <a href="https://www.nseindia.com/all-reports" target="_blank">🔗 NSE BhavCopy પેજ</a>
-    <a href="https://www.nseindia.com/reports-indices-historical-data" target="_blank">📊 Historical Data</a>
+    <a href="https://www.nseindia.com/resources/historical-reports-capital-market-daily-monthly-archives" target="_blank">📊 Historical Data</a>
   </div>
 
   <label class="upload multi" for="zipMulti">
@@ -218,7 +218,7 @@ let dataGap = 0;
 
 function openDB() {
   return new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 7);
+    const r = indexedDB.open(DB_NAME, 9);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
@@ -227,12 +227,14 @@ function openDB() {
     };
     r.onsuccess = e => { db = e.target.result; res(db); };
     r.onerror = e => rej(e.target.error);
+    r.onblocked = () => rej(new Error('બીજી ટેબ/વિન્ડોમાં આ જ App ખુલ્લી છે — એને બંધ કરી ફરી ટ્રાય કરો'));
   });
 }
-function saveDB(store, key, val) { return new Promise((res, rej) => { const tx = db.transaction(store, 'readwrite'); const req = tx.objectStore(store).put(val, key); req.onsuccess = () => res(); req.onerror = e => rej(e.target.error); }); }
-function getDB(store, key) { return new Promise((res, rej) => { const tx = db.transaction(store, 'readonly'); const req = tx.objectStore(store).get(key); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); }); }
-function getAllDB(store) { return new Promise((res, rej) => { const tx = db.transaction(store, 'readonly'); const req = tx.objectStore(store).getAll(); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); }); }
-function clearDB() { return new Promise((res, rej) => { const tx = db.transaction([STORE, META, SIGNALS], 'readwrite'); tx.objectStore(STORE).clear(); tx.objectStore(META).clear(); tx.objectStore(SIGNALS).clear(); tx.oncomplete = () => res(); tx.onerror = e => rej(e.target.error); }); }
+async function ensureDB() { if (!db) await openDB(); return db; }
+function saveDB(store, key, val) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readwrite'); const req = tx.objectStore(store).put(val, key); req.onsuccess = () => res(); req.onerror = e => rej(e.target.error); })); }
+function getDB(store, key) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readonly'); const req = tx.objectStore(store).get(key); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); })); }
+function getAllDB(store) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readonly'); const req = tx.objectStore(store).getAll(); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); })); }
+function clearDB() { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction([STORE, META, SIGNALS], 'readwrite'); tx.objectStore(STORE).clear(); tx.objectStore(META).clear(); tx.objectStore(SIGNALS).clear(); tx.oncomplete = () => res(); tx.onerror = e => rej(e.target.error); })); }
 
 function nseLinkForDate(isoDate) {
   const [y, m, d] = isoDate.split('-');
@@ -244,6 +246,24 @@ function todayIsoLocal() {
 }
 
 function parseYYYYMMDD(s) { return new Date(Number(s.slice(0,4)), Number(s.slice(4,6)) - 1, Number(s.slice(6,8))); }
+const NSE_HOLIDAYS_2026 = new Set([
+  '20260115', // Maharashtra Municipal Corp Election
+  '20260126', // Republic Day
+  '20260303', // Holi
+  '20260326', // Ram Navami
+  '20260331', // Mahavir Jayanti
+  '20260403', // Good Friday
+  '20260414', // Dr. Ambedkar Jayanti
+  '20260501', // Maharashtra Day
+  '20260528', // Bakri Id
+  '20260626', // Muharram
+  '20260914', // Ganesh Chaturthi
+  '20261002', // Gandhi Jayanti
+  '20261020', // Dussehra
+  '20261110', // Diwali Balipratipada
+  '20261124', // Guru Nanak Jayanti
+  '20261225'  // Christmas
+]);
 function detectGap(dates) {
   if (!dates || dates.length < 2) return 0;
   let maxGap = 0;
@@ -255,13 +275,33 @@ function detectGap(dates) {
     cur.setDate(cur.getDate() + 1);
     while (cur < d2) {
       const wd = cur.getDay();
-      if (wd !== 0 && wd !== 6) missing++;
+      const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
+      if (wd !== 0 && wd !== 6 && !NSE_HOLIDAYS_2026.has(ds)) missing++;
       cur.setDate(cur.getDate() + 1);
     }
     if (missing > maxGap) maxGap = missing;
   }
   return maxGap;
 }
+function getMissingDates(dates) {
+  if (!dates || dates.length < 2) return [];
+  const dateSet = new Set(dates);
+  const missing = [];
+  const start = parseYYYYMMDD(dates[0]);
+  const end = parseYYYYMMDD(dates[dates.length - 1]);
+  const cur = new Date(start);
+  cur.setDate(cur.getDate() + 1);
+  while (cur < end) {
+    const wd = cur.getDay();
+    if (wd !== 0 && wd !== 6) {
+      const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
+      if (!dateSet.has(ds) && !NSE_HOLIDAYS_2026.has(ds)) missing.push(ds);
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return missing;
+}
+function fmtDateShort(ds) { return ds.slice(6,8) + '-' + ds.slice(4,6); }
 
 async function handleMultiZip(event, mode) {
   const files = Array.from(event.target.files);
@@ -302,7 +342,6 @@ async function handleMultiZip(event, mode) {
           const iLo = h.indexOf('LwPric');
           const iCl = h.indexOf('ClsPric');
           const iVol = h.indexOf('TtlTradgVol');
-          const iDeliv = h.indexOf('DELIV_PER') !== -1 ? h.indexOf('DELIV_PER') : h.indexOf('%DELIVQTY');
           if (iSym === -1 || iCl === -1) { skippedFiles.push({ name: file.name, reason: 'જરૂરી કોલમ (Symbol/Close) ના મળી' }); continue; }
           for (let i = 1; i < lines.length; i++) {
             const p = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
@@ -320,8 +359,7 @@ async function handleMultiZip(event, mode) {
               o: parseFloat(p[iOp]),
               h: parseFloat(p[iHi]),
               l: parseFloat(p[iLo]),
-              c, v,
-              dp: (iDeliv !== -1 && p[iDeliv] !== undefined && p[iDeliv] !== null && p[iDeliv] !== '') ? parseFloat(p[iDeliv]) : undefined
+              c, v
             });
             fileRowsAdded++;
           }
@@ -353,12 +391,14 @@ async function handleMultiZip(event, mode) {
       stocks: Object.keys(stockData).length,
       dateRange: keptDates.length > 0 ? keptDates[0] + ' → ' + keptDates[keptDates.length - 1] : '-',
       removed: removedCount,
-      gap: dataGap
+      gap: dataGap,
+      dates: keptDates
     });
     if (latestDate) { await checkPreviousSignals(latestDate); }
     updateStatus();
     analyze();
-    if (allStocks.length > 0 && latestDate) { await saveSignals(allStocks, latestDate); }
+    const actualLatestDate = getLatestDate().raw;
+    if (allStocks.length > 0 && actualLatestDate) { await saveSignals(allStocks, actualLatestDate); }
     pushToCloud(true);
     await refreshReminder();
     if (skippedFiles.length > 0) {
@@ -405,10 +445,9 @@ async function saveSignals(stocks, date) {
 }
 
 function checkEntryConditions(sig, sigDate, newDays) {
-  if (sig.entryStatus !== 'waiting') return false;
+  if (sig.entryStatus !== 'waiting' && sig.entryStatus !== 'weak') return false;
   let changed = false;
   for (const day of newDays) {
-    sig.daysWaited = (sig.daysWaited || 0) + 1;
     if (day.h >= sig.confirmAbove && day.v >= sig.requiredVolume) {
       sig.entryStatus = 'hit';
       sig.entryDate = day.date;
@@ -418,7 +457,8 @@ function checkEntryConditions(sig, sigDate, newDays) {
       changed = true;
       break;
     }
-    if (day.h >= sig.confirmAbove && day.v < sig.requiredVolume) {
+    sig.daysWaited = (sig.daysWaited || 0) + 1;
+    if (sig.entryStatus !== 'weak' && day.h >= sig.confirmAbove && day.v < sig.requiredVolume) {
       sig.entryStatus = 'weak';
       sig.entryDate = day.date;
       sig.entryPrice = sig.confirmAbove;
@@ -448,10 +488,11 @@ async function checkPreviousSignals(currentDate) {
         if (sig.status === 'pending') { sig.status = 'expired'; sig.entryStatus = 'expired'; sigChanged = true; }
         results.push(sig); continue;
       }
-      const newDays = stock.filter(x => x.date > sigData.date);
+      const newDays = stock.filter(x => x.date > (sig.checkedUntil || sigData.date));
 
-      if (sig.entryStatus === 'waiting' && newDays.length > 0) {
+      if ((sig.entryStatus === 'waiting' || sig.entryStatus === 'weak') && newDays.length > 0) {
         if (checkEntryConditions(sig, sigData.date, newDays)) sigChanged = true;
+        sig.checkedUntil = newDays[newDays.length - 1].date;
       }
 
       if (sig.entryStatus === 'hit' && sig.status === 'entered') {
@@ -480,7 +521,7 @@ async function checkPreviousSignals(currentDate) {
     }
     if (sigChanged) await saveDB(SIGNALS, 'signal_' + sigData.date, sigData);
   }
-  if (results.length === 0) return;
+  if (results.length === 0) { renderEntryTracker([]); return; }
   renderEntryTracker(results);
   const wins = results.filter(r => r.status === 'target').length;
   const losses = results.filter(r => r.status === 'sl').length;
@@ -531,10 +572,10 @@ function renderEntryTracker(results) {
         <div class="track-sym">${statusIcon} ${sig.sym}</div>
         <div style="font-size:12px;font-weight:bold;color:${statusColor};">${statusText}</div>
       </div>
-      <div class="track-detail">🎯 Confirm Above: ₹${sig.confirmAbove.toFixed(2)} | 📊 Required Vol: ${Math.round(sig.requiredVolume).toLocaleString('en-IN')}</div>
-      ${sig.entryDate ? `<div class="track-detail">📅 Entry Date: ${entryDateFmt} | 💰 Entry Price: ₹${sig.entryPrice.toFixed(2)} | 📊 Entry Vol: ${Math.round(sig.entryVolume || 0).toLocaleString('en-IN')}</div>` : ''}
-      ${sig.status === 'target' ? `<div class="track-detail" style="color:#2e7d32;font-weight:bold;">✅ TARGET HIT — નફો +${sig.profit.toFixed(2)}%</div>` : ''}
-      ${sig.status === 'sl' ? `<div class="track-detail" style="color:#c62828;font-weight:bold;">❌ SL HIT — ખોટ ${sig.profit.toFixed(2)}%</div>` : ''}
+      <div class="track-detail">🎯 Confirm Above: ₹${(sig.confirmAbove ?? 0).toFixed(2)} | 📊 Required Vol: ${Math.round(sig.requiredVolume ?? 0).toLocaleString('en-IN')}</div>
+      ${sig.entryDate ? `<div class="track-detail">📅 Entry Date: ${entryDateFmt} | 💰 Entry Price: ₹${(sig.entryPrice ?? 0).toFixed(2)} | 📊 Entry Vol: ${Math.round(sig.entryVolume || 0).toLocaleString('en-IN')}</div>` : ''}
+      ${sig.status === 'target' ? `<div class="track-detail" style="color:#2e7d32;font-weight:bold;">✅ TARGET HIT — નફો +${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
+      ${sig.status === 'sl' ? `<div class="track-detail" style="color:#c62828;font-weight:bold;">❌ SL HIT — ખોટ ${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
     </div>`;
   });
   h += `</div>`;
@@ -569,6 +610,10 @@ async function updateStatus() {
     if (m.dateRange && m.dateRange !== '-') txt += `<br><small>${m.dateRange}</small>`;
     if (m.removed > 0) txt += `<br><small style="color:#c62828;">🗑️ ${m.removed} જૂનો દિવસ ડિલીટ</small>`;
     if (m.days < MIN_DAYS_MACD) txt += `<br><small style="color:#e65100;">⚠️ MACD માટે ${MIN_DAYS_MACD}+ દિવસ</small>`;
+    const missing = getMissingDates(m.dates || []);
+    if (missing.length > 0) {
+      txt += `<br><small style="color:#c62828;">🚫 ${missing.length} તારીખ(ો) ની ફાઈલ upload નથી: ${missing.map(fmtDateShort).join(', ')}</small>`;
+    }
     el.innerHTML = txt;
   } else { el.innerHTML = '📊 હાલ કોઈ ડેટા નથી'; }
 }
@@ -583,6 +628,8 @@ async function refreshReminder() {
   let html = '';
   if (day === 0 || day === 6) {
     html = `<div class="reminder info">🎉 આજે Weekend છે — Market બંધ</div>`;
+  } else if (NSE_HOLIDAYS_2026.has(todayStr)) {
+    html = `<div class="reminder info">🎉 આજે જાહેર રજા છે — Market બંધ</div>`;
   } else if (hour < 16) {
     html = `<div class="reminder info">⏰ Market ચાલુ છે — 3:30 PM પછી BhavCopy upload કરો</div>`;
   } else if (!m.dateRange || m.dateRange === '-') {
@@ -669,7 +716,7 @@ function exportExcel() {
     'Profit%', 'R:R', 'RSI', 'Close%', 'Change%', 'Streak',
     'ActualVol', 'AvgVol', 'RequiredVol_1.5x', 'VolRatio', 'VolOK',
     'MACD_Hist', 'MACD_Line', 'Signal_Line', 'MACD_Bullish',
-    'Breakout', 'BreakoutAge', 'Delivery%',
+    'Breakout', 'BreakoutAge',
     'SupportEntry', 'SupportSL', 'SupportProfit%'
   ];
 
@@ -707,7 +754,6 @@ function exportExcel() {
       s.macdBullish ? 'YES' : 'NO',
       s.brk ? 'YES' : 'NO',
       breakoutAgeTxt,
-      (s.dp !== undefined && s.dp !== null && !isNaN(s.dp)) ? s.dp.toFixed(1) : '',
       s.supportEntry.toFixed(2),
       s.supportSL.toFixed(2),
       s.supportProfitPct.toFixed(2)
@@ -806,7 +852,7 @@ function calc(sym, d) {
   const ma20 = cl.length >= 20 ? cl.slice(-20).reduce((a,b) => a+b, 0) / 20 : null;
   const rsi = calcRSI(cl, 14);
 
-  let macdLine = 0, signalLine = 0, histogram = 0, macdBullish = false;
+  let macdLine = 0, signalLine = 0, histogram = 0, macdBullish = false, macdDataOk = false;
   if (cl.length >= 26) {
     const macdValues = [];
     for (let i = 26; i <= cl.length; i++) {
@@ -816,7 +862,7 @@ function calc(sym, d) {
       if (e12 !== null && e26 !== null) macdValues.push(e12 - e26);
     }
     if (macdValues.length > 0) macdLine = macdValues[macdValues.length - 1];
-    if (macdValues.length >= 9) { signalLine = ema(macdValues, 9); if (signalLine === null) signalLine = macdLine; }
+    if (macdValues.length >= 9) { signalLine = ema(macdValues, 9); if (signalLine === null) signalLine = macdLine; macdDataOk = true; }
     else signalLine = macdLine;
     histogram = macdLine - signalLine;
     macdBullish = macdLine > signalLine && histogram > 0;
@@ -831,7 +877,7 @@ function calc(sym, d) {
     avgV = vo.reduce((a, b) => a + b, 0) / vo.length;
     high20val = Math.max(...d.map(x => x.h));
   }
-  const vR = last.v / avgV;
+  const vR = avgV > 0 ? last.v / avgV : 0;
   const brk = price > high20val;
   const atr = calcATR(d, 14);
 
@@ -877,7 +923,8 @@ function calc(sym, d) {
   if (cl.length >= 5 && cl[cl.length - 1] > cl[cl.length - 5]) { score += 8; sig.push({ ok: 1, t: '✅ 5-Day Uptrend' }); }
   else sig.push({ ok: 0, t: '❌ Short Down' });
 
-  if (macdBullish) { score += 12; sig.push({ ok: 1, t: '✅ MACD Bullish' }); }
+  if (!macdDataOk) sig.push({ ok: 0, t: '⚠️ MACD ડેટા ઓછો', warn: 1 });
+  else if (macdBullish) { score += 12; sig.push({ ok: 1, t: '✅ MACD Bullish' }); }
   else sig.push({ ok: 0, t: '❌ MACD Bearish' });
 
   let closePos = 0;
@@ -906,11 +953,6 @@ function calc(sym, d) {
   for (let i = cl.length - 1; i >= 1; i--) { if (cl[i] > cl[i-1]) streak++; else break; }
   if (streak >= 2) { score += 5; sig.push({ ok: 1, t: `✅ ${streak} દિવસ સતત વધારો` }); }
 
-  if (last.dp !== undefined && last.dp !== null && !isNaN(last.dp)) {
-    if (last.dp >= 50) { score += 5; sig.push({ ok: 1, t: `✅ Delivery ${last.dp.toFixed(0)}%` }); }
-    else sig.push({ ok: 0, t: `❌ Delivery ${last.dp.toFixed(0)}%` });
-  }
-
   const sl = price * (1 - SL_PCT / 100);
   let t1 = price + (atr * ATR_TARGET_MULT);
   if (t1 < price * (1 + TARGET_MIN / 100)) t1 = price * (1 + TARGET_MIN / 100);
@@ -934,8 +976,31 @@ function calc(sym, d) {
     confirmAbove: last.h, freshBreakout, brk, breakoutAge,
     supportEntry, supportSL, supportProfitPct,
     volume: last.v, avgVolume: avgV, confirmVolOk: vR >= 1.5, requiredVolume: avgV * 1.5,
-    dp: last.dp
+    cl
   };
+}
+
+function sparklineSVG(closes) {
+  if (!closes || closes.length < 2) return '';
+  const w = 300, h = 46, pad = 3;
+  const min = Math.min(...closes), max = Math.max(...closes);
+  const range = (max - min) || 1;
+  const step = (w - pad * 2) / (closes.length - 1);
+  const pts = closes.map((c, i) => {
+    const x = pad + i * step;
+    const y = h - pad - ((c - min) / range) * (h - pad * 2);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  const up = closes[closes.length - 1] >= closes[0];
+  const color = up ? '#2e7d32' : '#c62828';
+  const fillColor = up ? 'rgba(46,125,50,0.15)' : 'rgba(198,40,40,0.15)';
+  const areaPts = `${pad},${h - pad} ` + pts.join(' ') + ` ${w - pad},${h - pad}`;
+  const changePct = ((closes[closes.length - 1] - closes[0]) / closes[0]) * 100;
+  const chart = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block;">
+    <polygon points="${areaPts}" fill="${fillColor}" stroke="none"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+  return { chart, changePct, color };
 }
 
 function formatVol(n) {
@@ -943,7 +1008,24 @@ function formatVol(n) {
   return Math.round(n).toLocaleString('en-IN');
 }
 function ema(a, p) { if (a.length < p) return null; const k = 2 / (p + 1); let e = a.slice(0, p).reduce((x, y) => x + y, 0) / p; for (let i = p; i < a.length; i++) e = a[i] * k + e * (1 - k); return e; }
-function calcRSI(c, p) { if (c.length < p + 1) return 50; let g = 0, l = 0; for (let i = c.length - p; i < c.length; i++) { const df = c[i] - c[i - 1]; if (df >= 0) g += df; else l -= df; } if (l === 0) return 100; return 100 - 100 / (1 + (g / p) / (l / p)); }
+function calcRSI(c, p) {
+  if (c.length < p + 1) return 50;
+  let g = 0, l = 0;
+  for (let i = 1; i <= p; i++) {
+    const df = c[i] - c[i - 1];
+    if (df >= 0) g += df; else l -= df;
+  }
+  let avgG = g / p, avgL = l / p;
+  for (let i = p + 1; i < c.length; i++) {
+    const df = c[i] - c[i - 1];
+    const gain = df >= 0 ? df : 0;
+    const loss = df < 0 ? -df : 0;
+    avgG = (avgG * (p - 1) + gain) / p;
+    avgL = (avgL * (p - 1) + loss) / p;
+  }
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
+}
 function calcATR(d, p) { if (d.length < p + 1) return 0; let s = 0; for (let i = d.length - p; i < d.length; i++) { s += Math.max(d[i].h - d[i].l, Math.abs(d[i].h - d[i - 1].c), Math.abs(d[i].l - d[i - 1].c)); } return s / p; }
 
 function filterStocks(type) {
@@ -959,7 +1041,7 @@ function filterStocks(type) {
 }
 
 function searchStock() { searchTerm = document.getElementById('searchBox').value.trim().toUpperCase(); render(allStocks); }
-function openGoogleGraph(symbol) { window.open('https://www.google.com/search?q=NSE:' + symbol + '+share+price', '_blank'); }
+function openGoogleGraph(symbol) { window.open('https://www.google.com/search?q=NSE:' + encodeURIComponent(symbol) + '+share+price', '_blank'); }
 function toggleSupport(el) {
   const panel = el.nextElementSibling;
   const showing = panel.style.display !== 'none';
@@ -995,6 +1077,7 @@ function render(list) {
 
   filtered.slice(0, 50).forEach((s, i) => {
     const cl = s.score >= STRONG_SCORE ? '' : (s.score >= MIN_SCORE ? 'med' : 'bad');
+    const spark = sparklineSVG(s.cl);
     h += `<div class="card ${cl}">
       <div class="ch">
         <div class="cn link" onclick="openGoogleGraph('${s.sym}')">#${i + 1} ${s.sym} 🔗</div>
@@ -1004,6 +1087,13 @@ function render(list) {
         <span class="safe-badge">🛡️ SL 3% | Target ${s.profitPct.toFixed(1)}%</span>
         <span class="safe-badge" style="margin-left:4px;background:${s.macdBullish ? '#c8e6c9' : '#ffcdd2'};color:${s.macdBullish ? '#1b5e20' : '#c62828'};">MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}</span>
         <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
+      </div>
+      <div style="background:#f9fbe7;border:1px solid #dcedc8;border-radius:6px;padding:6px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">${spark.chart}</div>
+        <div style="text-align:right;white-space:nowrap;">
+          <div style="font-size:11px;color:#689f38;">${s.cl.length} દિવસ</div>
+          <div style="font-size:13px;font-weight:bold;color:${spark.color};">${spark.changePct >= 0 ? '+' : ''}${spark.changePct.toFixed(1)}%</div>
+        </div>
       </div>
       <div style="font-size:11.5px;color:#e65100;margin-bottom:4px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
       <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">${s.confirmVolOk ? '✅' : '⚠️'} Actual Volume: ${formatVol(s.volume)} | જરૂરી Volume: ${formatVol(s.requiredVolume)}</div>
@@ -1019,7 +1109,7 @@ function render(list) {
         <div class="d"><div class="dl">RSI</div><div class="dv">${s.rsi.toFixed(0)}</div></div>
         <div class="d"><div class="dl">MACD</div><div class="dv ${s.macdBullish ? 'g' : 'r'}">${s.histogram.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Close%</div><div class="dv ${s.closePos >= 70 ? 'g' : 'o'}">${s.closePos.toFixed(0)}%</div></div>
-        <div class="d"><div class="dl">Change%</div><div class="dv ${s.chg >= 1 && s.chg <= 8 ? 'g' : (s.chg > 8 ? 'o' : 'r')}">${s.chg !== null ? (s.chg >= 0 ? '+' : '') + s.chg.toFixed(1) : '—'}</div></div>
+        <div class="d"><div class="dl">Change%</div><div class="dv ${s.chg === null ? '' : (s.chg >= 1 && s.chg <= 8 ? 'g' : (s.chg > 8 ? 'o' : 'r'))}">${s.chg !== null ? (s.chg >= 0 ? '+' : '') + s.chg.toFixed(1) : '—'}</div></div>
         <div class="d"><div class="dl">Streak</div><div class="dv">${s.streak > 0 ? s.streak + ' દિ' : '—'}</div></div>
       </div>
       <div class="sig">${s.sig.map(x => `<span class="s ${x.ok ? '' : (x.warn ? 'warn' : 'no')}">${x.t}</span>`).join('')}</div>
