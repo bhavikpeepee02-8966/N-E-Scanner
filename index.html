@@ -264,6 +264,19 @@ const NSE_HOLIDAYS_2026 = new Set([
   '20261124', // Guru Nanak Jayanti
   '20261225'  // Christmas
 ]);
+function tradingDaysBetween(d1, d2) {
+  // Counts trading days strictly between d1 and d2 (exclusive), skipping weekends & NSE holidays
+  let count = 0;
+  const cur = new Date(d1);
+  cur.setDate(cur.getDate() + 1);
+  while (cur < d2) {
+    const wd = cur.getDay();
+    const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
+    if (wd !== 0 && wd !== 6 && !NSE_HOLIDAYS_2026.has(ds)) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
 function detectGap(dates) {
   if (!dates || dates.length < 2) return 0;
   let maxGap = 0;
@@ -640,11 +653,12 @@ async function refreshReminder() {
       html = `<div class="reminder" style="background:#e8f5e9;border:1px solid #66bb6a;color:#2e7d32;">✅ આજનો ડેટા upload થઈ ગયો — તાજો છે!</div>`;
     } else {
       const lastD = new Date(lastDate.slice(0,4), lastDate.slice(4,6)-1, lastDate.slice(6,8));
-      const diffDays = Math.floor((today - lastD) / (1000*60*60*24));
-      if (diffDays >= 3) {
-        html = `<div class="reminder warn">🔴 ${diffDays} દિવસ જૂનો ડેટા — તાત્કાલિક upload કરો!</div>`;
+      // Count only trading days missed (skips weekends & NSE holidays), not raw calendar days
+      const tradingGap = tradingDaysBetween(lastD, today) + 1;
+      if (tradingGap >= 3) {
+        html = `<div class="reminder warn">🔴 ${tradingGap} ટ્રેડિંગ દિવસ જૂનો ડેટા — તાત્કાલિક upload કરો!</div>`;
       } else {
-        html = `<div class="reminder info">⚠️ આજની BhavCopy upload બાકી — છેલ્લો ડેટા ${diffDays} દિવસ જૂનો</div>`;
+        html = `<div class="reminder info">⚠️ આજની BhavCopy upload બાકી — છેલ્લો ડેટા ${tradingGap} ટ્રેડિંગ દિવસ જૂનો</div>`;
       }
     }
   }
