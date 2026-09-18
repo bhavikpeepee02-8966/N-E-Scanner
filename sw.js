@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nse-scanner-v13';
+const CACHE_NAME = 'nse-scanner-v14';
 const ASSETS = [
   './index.html',
   './manifest.json',
