@@ -1228,6 +1228,20 @@ async function pushToCloud(silent) {
 }
 document.getElementById('ghSaveBtn').addEventListener('click', () => pushToCloud(false));
 
+let autoSyncTimer = null;
+function scheduleAutoSync() {
+  const s = loadGhSettings();
+  if (!s.owner || !s.repo || !s.token || !s.path) return;
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer = setTimeout(() => pushToCloud(true), 4000);
+}
+(function watchDBForAutoSync() {
+  const origSaveDB = saveDB;
+  saveDB = function(store, key, val) {
+    return origSaveDB(store, key, val).then(res => { scheduleAutoSync(); return res; });
+  };
+})();
+
 function showLastSyncTime() {
   const t = localStorage.getItem(GH_SETTINGS_KEY + '_lastSync');
   if (t) {
