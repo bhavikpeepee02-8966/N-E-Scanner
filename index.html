@@ -815,9 +815,9 @@ function exportPortfolio() {
   list.forEach(s => {
     const symbolNS = s.sym + '.NS';
     const companyName = s.sym;
-    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","","","","","","","","","","","",""\n`;
+    csv += `"${id}","${symbolNS}","${companyName}","","NSI","${dateStr}","INR","","","","","","","","","","","",""\n`;
     id++;
-    csv += `"${id}","${symbolNS}","${companyName}","","NSI","Try","INR","1","${s.confirmAbove.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
+    csv += `"${id}","${symbolNS}","${companyName}","","NSI","${dateStr}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
     id++;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
