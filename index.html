@@ -2,176 +2,417 @@
 <html lang="gu">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>NSE Scanner - MACD Safe Mode Pro</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2e7d32">
+<meta name="theme-color" content="#1b5e20">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #f1f8e9; color: #1b5e20; padding: 10px; font-size: 14px; min-height: 100vh; }
-  .container { max-width: 100%; background: #ffffff; border: 2px solid #a5d6a7; border-radius: 12px; padding: 14px; box-shadow: 0 4px 12px rgba(76,175,80,0.15); }
-  h1 { color: #2e7d32; font-size: 20px; text-align: center; margin-bottom: 6px; }
-  .sub { text-align: center; color: #558b2f; font-size: 12px; margin-bottom: 12px; }
-  .info { background: #e8f5e9; color: #1b5e20; padding: 10px; border-radius: 8px; font-size: 12px; text-align: center; margin-bottom: 12px; border: 1px solid #a5d6a7; line-height: 1.4; }
-  .status { background: #fff8e1; padding: 10px; border-radius: 8px; font-size: 12px; text-align: center; color: #e65100; margin-bottom: 12px; border: 1px solid #ffcc80; line-height: 1.5; }
-  .reminder { border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 12px; line-height: 1.5; }
-  .reminder.warn { background: #ffebee; border: 1px solid #ef5350; color: #c62828; }
-  .reminder.info { background: #fff8e1; border: 1px solid #ffcc80; color: #e65100; }
-  .nse { background: #c8e6c9; padding: 12px; border-radius: 10px; margin-bottom: 12px; text-align: center; border: 1px solid #81c784; }
-  .nse h2 { color: #1b5e20; font-size: 15px; margin-bottom: 8px; }
-  .nse a { display: block; background: #43a047; color: #ffffff; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 6px 0; }
-  .upload { background: #f9fbe7; border: 3px dashed #66bb6a; border-radius: 10px; padding: 18px 10px; text-align: center; margin-bottom: 10px; cursor: pointer; display: block; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Gujarati', Arial, sans-serif;
+    background: linear-gradient(180deg, #e8f5e9 0%, #f1f8e9 100%);
+    color: #1b5e20; padding: 12px; font-size: 16px; line-height: 1.5; min-height: 100vh; font-weight: 500;
+  }
+  .container { max-width: 100%; background: #ffffff; border-radius: 16px; padding: 18px 14px; box-shadow: 0 6px 24px rgba(27, 94, 32, 0.12); }
+  h1 { color: #1b5e20; font-size: 22px; text-align: center; margin-bottom: 6px; font-weight: 800; letter-spacing: -0.3px; }
+  .sub { text-align: center; color: #2e7d32; font-size: 13px; margin-bottom: 16px; font-weight: 500; line-height: 1.4; }
+  .info { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20; padding: 14px 12px; border-radius: 12px; font-size: 14px; text-align: center; margin-bottom: 14px; border: 1px solid #81c784; line-height: 1.5; font-weight: 600; }
+  .status { background: #fff8e1; padding: 14px 12px; border-radius: 12px; font-size: 14px; text-align: center; color: #bf360c; margin-bottom: 14px; border: 1px solid #ffb74d; line-height: 1.55; font-weight: 500; }
+  .reminder { border-radius: 12px; padding: 14px 12px; margin-bottom: 12px; font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .reminder.warn { background: #ffebee; border: 2px solid #ef5350; color: #b71c1c; }
+  .reminder.info { background: #fff8e1; border: 2px solid #ffb74d; color: #bf360c; }
+
+  .nse { background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); padding: 16px 12px; border-radius: 14px; margin-bottom: 16px; text-align: center; border: 2px solid #66bb6a; }
+  .nse h2 { color: #1b5e20; font-size: 17px; margin-bottom: 12px; font-weight: 800; }
+  .nse a { display: block; background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); color: #ffffff; padding: 14px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 8px 0; box-shadow: 0 3px 8px rgba(27, 94, 32, 0.25); transition: transform 0.1s; }
+  .nse a:active { transform: scale(0.97); }
+
+  .upload { background: #f9fbe7; border: 3px dashed #66bb6a; border-radius: 14px; padding: 22px 14px; text-align: center; margin-bottom: 12px; cursor: pointer; display: block; transition: all 0.15s; }
+  .upload:active { background: #e8f5e9; transform: scale(0.99); }
   .upload input { display: none; }
-  .upload .ico { font-size: 36px; }
-  .upload .txt { color: #2e7d32; font-size: 14px; font-weight: bold; margin-top: 6px; }
-  .upload .sm { color: #689f38; font-size: 11px; margin-top: 4px; }
-  .upload.multi { border-color: #43a047; background: #e8f5e9; }
-  .upload.daily { border-color: #ff9800; background: #fff8e1; }
-  .upload.daily .txt { color: #e65100; }
-  .upload.daily .sm { color: #ef6c00; }
-  .btns { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .btn { padding: 12px; border: none; border-radius: 8px; color: #ffffff; font-size: 14px; font-weight: bold; cursor: pointer; width: 100%; }
-  .btn-load { background: #43a047; }
-  .btn-del { background: #e53935; }
-  .btn-export { background: #1976d2; }
-  .btn-portfolio { background: #7b1fa2; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .stat { background: #f1f8e9; padding: 12px 6px; border-radius: 8px; text-align: center; border: 1px solid #c5e1a5; transition: 0.2s; }
+  .upload .ico { font-size: 42px; line-height: 1; }
+  .upload .txt { color: #1b5e20; font-size: 16px; font-weight: 700; margin-top: 10px; line-height: 1.35; }
+  .upload .sm { color: #558b2f; font-size: 13px; margin-top: 6px; font-weight: 500; }
+  .upload.multi { border-color: #43a047; background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); }
+
+  .btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn { padding: 16px 14px; border: none; border-radius: 12px; color: #ffffff; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s, box-shadow 0.15s; box-shadow: 0 3px 10px rgba(0,0,0,0.15); min-height: 52px; line-height: 1.3; }
+  .btn:active { transform: scale(0.97); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .btn-load { background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); }
+  .btn-del { background: linear-gradient(135deg, #ef5350 0%, #c62828 100%); }
+  .btn-export { background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%); }
+  .btn-portfolio { background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%); }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat { background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); padding: 16px 8px; border-radius: 12px; text-align: center; border: 2px solid #c5e1a5; transition: all 0.15s; }
   .stat.clickable { cursor: pointer; }
-  .stat.clickable:active { background: #c8e6c9; transform: scale(0.97); }
-  .stat.active { background: #43a047; border-color: #2e7d32; }
+  .stat.clickable:active { background: #c8e6c9; transform: scale(0.96); }
+  .stat.active { background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); border-color: #1b5e20; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3); }
   .stat.active .n, .stat.active .l { color: #ffffff !important; }
-  .stat .n { font-size: 22px; font-weight: bold; color: #2e7d32; }
-  .stat .l { font-size: 11px; color: #558b2f; margin-top: 4px; }
-  .search-box { width: 100%; padding: 12px; border: 2px solid #a5d6a7; border-radius: 8px; font-size: 14px; background: #f9fbe7; color: #1b5e20; outline: none; margin-bottom: 12px; }
-  .search-box:focus { border-color: #43a047; background: #ffffff; }
-  .card { background: #ffffff; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #c5e1a5; border-left: 5px solid #43a047; box-shadow: 0 2px 6px rgba(76,175,80,0.1); }
-  .card.med { border-left-color: #ff9800; }
-  .card.bad { border-left-color: #e53935; }
-  .ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
-  .cn { font-size: 16px; font-weight: bold; color: #1b5e20; }
-  .cn.link { cursor: pointer; color: #1565c0; text-decoration: underline; }
-  .cs { padding: 4px 10px; border-radius: 20px; background: #c8e6c9; color: #1b5e20; font-size: 12px; font-weight: bold; }
-  .cs.med { background: #ffe0b2; color: #e65100; }
-  .cs.bad { background: #ffcdd2; color: #c62828; }
-  .cd { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  .d { background: #f9fbe7; padding: 6px; border-radius: 6px; text-align: center; border: 1px solid #dcedc8; }
-  .d .dl { font-size: 10px; color: #558b2f; }
-  .d .dv { font-size: 13px; font-weight: bold; color: #1b5e20; margin-top: 2px; }
+  .stat .n { font-size: 28px; font-weight: 800; color: #1b5e20; line-height: 1.1; }
+  .stat .l { font-size: 13px; color: #2e7d32; margin-top: 6px; font-weight: 600; line-height: 1.3; }
+
+  .search-box { width: 100%; padding: 15px 14px; border: 2px solid #a5d6a7; border-radius: 12px; font-size: 16px; background: #f9fbe7; color: #1b5e20; outline: none; margin-bottom: 16px; font-weight: 500; transition: all 0.15s; }
+  .search-box:focus { border-color: #43a047; background: #ffffff; box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.12); }
+  .search-box::placeholder { color: #7cb342; }
+
+  .card { background: #ffffff; border-radius: 14px; padding: 16px 14px; margin-bottom: 14px; border: 2px solid #c5e1a5; border-left: 6px solid #43a047; box-shadow: 0 3px 10px rgba(27, 94, 32, 0.08); }
+  .card.med { border-left-color: #ff9800; border-color: #ffe0b2; }
+  .ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+  .cn { font-size: 20px; font-weight: 800; color: #1b5e20; letter-spacing: -0.3px; }
+  .cn.link { cursor: pointer; color: #1565c0; text-decoration: none; }
+  .cs { padding: 6px 14px; border-radius: 22px; background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); color: #1b5e20; font-size: 14px; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .cs.med { background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%); color: #bf360c; }
+
+  .score-bar-wrap { background: #e8f5e9; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px; border: 1px solid #c5e1a5; }
+  .score-bar { height: 100%; background: linear-gradient(90deg, #66bb6a 0%, #2e7d32 100%); border-radius: 4px; transition: width 0.4s; }
+  .score-bar.med { background: linear-gradient(90deg, #ffb74d 0%, #ef6c00 100%); }
+
+  .verdict { padding: 10px 14px; border-radius: 10px; font-size: 14.5px; font-weight: 800; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .verdict.strong { background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); color: #1b5e20; border: 2px solid #43a047; }
+  .verdict.buy { background: linear-gradient(135deg, #e8f5e9 0%, #dcedc8 100%); color: #2e7d32; border: 2px solid #81c784; }
+  .verdict .verdict-entry { font-size: 12.5px; background: rgba(255,255,255,0.75); padding: 4px 10px; border-radius: 8px; font-weight: 700; color: #1b5e20; }
+
+  .entry-box { background: #fff8e1; border: 1px solid #ffcc80; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 13.5px; }
+  .entry-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-weight: 600; color: #bf360c; }
+  .entry-row .entry-val { font-weight: 800; }
+  .entry-row .ok { color: #2e7d32; font-weight: 800; }
+  .entry-row .warn { color: #e65100; font-weight: 800; }
+
+  .cd { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .d { background: #f9fbe7; padding: 10px 6px; border-radius: 8px; text-align: center; border: 1px solid #dcedc8; }
+  .d .dl { font-size: 11.5px; color: #558b2f; font-weight: 600; line-height: 1.2; }
+  .d .dv { font-size: 15px; font-weight: 800; color: #1b5e20; margin-top: 4px; line-height: 1.2; }
   .d .dv.g { color: #2e7d32; }
   .d .dv.r { color: #c62828; }
   .d .dv.o { color: #e65100; }
-  .safe-badge { background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; border: 1px solid #a5d6a7; }
-  .sig { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
-  .s { padding: 3px 8px; border-radius: 12px; font-size: 10px; background: #c8e6c9; color: #1b5e20; font-weight: bold; }
-  .s.no { background: #eeeeee; color: #757575; }
-  .s.warn { background: #ffe0b2; color: #e65100; }
-  .support-toggle { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #c5e1a5; font-size: 11.5px; color: #1565c0; text-align: center; cursor: pointer; }
-  .support-panel { margin-top: 6px; }
-  .empty { text-align: center; padding: 20px; color: #558b2f; font-size: 13px; line-height: 1.5; }
-  .load { text-align: center; padding: 20px; color: #2e7d32; font-size: 14px; line-height: 1.5; }
-  .spin { border: 4px solid #e8f5e9; border-top: 4px solid #43a047; border-radius: 50%; width: 40px; height: 40px; animation: sp 1s linear infinite; margin: 0 auto 10px; }
+  .safe-badge { background: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 14px; font-size: 11.5px; font-weight: 700; border: 1px solid #a5d6a7; display: inline-block; margin-bottom: 4px; }
+  .sig { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .s { padding: 5px 10px; border-radius: 14px; font-size: 11.5px; background: #c8e6c9; color: #1b5e20; font-weight: 700; line-height: 1.3; }
+  .s.no { background: #eeeeee; color: #616161; }
+  .s.warn { background: #ffe0b2; color: #bf360c; }
+  .support-toggle { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #c5e1a5; font-size: 13.5px; color: #1565c0; text-align: center; cursor: pointer; font-weight: 700; padding-bottom: 4px; }
+  .support-panel { margin-top: 10px; }
+  .empty { text-align: center; padding: 28px 16px; color: #558b2f; font-size: 15px; line-height: 1.6; font-weight: 500; }
+  .load { text-align: center; padding: 28px 16px; color: #1b5e20; font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .spin { border: 4px solid #e8f5e9; border-top: 4px solid #43a047; border-radius: 50%; width: 48px; height: 48px; animation: sp 1s linear infinite; margin: 0 auto 14px; }
   @keyframes sp { 100% { transform: rotate(360deg); } }
-  .track-card { background: #ffffff; border-radius: 10px; padding: 10px; margin-bottom: 8px; border: 1px solid #c5e1a5; border-left: 5px solid #43a047; }
-  .track-card.win { border-left-color: #2e7d32; background: #f1f8e9; }
-  .track-card.loss { border-left-color: #c62828; background: #ffebee; }
-  .track-card.pending { border-left-color: #f57c00; background: #fff8e1; }
+
+  .track-card { background: #ffffff; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 2px solid #c5e1a5; border-left: 6px solid #43a047; }
   .track-card.entryhit { border-left-color: #2e7d32; background: #e8f5e9; }
   .track-card.weak { border-left-color: #fbc02d; background: #fffde7; }
   .track-card.noentry { border-left-color: #9e9e9e; background: #fafafa; }
-  .track-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .track-sym { font-size: 14px; font-weight: bold; color: #1b5e20; }
-  .track-profit { font-size: 14px; font-weight: bold; }
-  .track-profit.pos { color: #2e7d32; }
-  .track-profit.neg { color: #c62828; }
-  .track-profit.neu { color: #f57c00; }
-  .track-detail { font-size: 11px; color: #558b2f; }
-  .sync-card { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 10px; padding: 14px; margin-top: 14px; }
-  .sync-card h3 { color: #1b5e20; font-size: 15px; margin-bottom: 8px; }
-  .sync-card .hint { font-size: 11.5px; color: #558b2f; line-height: 1.5; margin-bottom: 10px; }
-  .sync-card label { font-size: 11px; color: #558b2f; display: block; margin: 8px 0 3px; }
-  .sync-card input { width: 100%; padding: 9px 10px; border: 1px solid #a5d6a7; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-  .sync-card .row2 { display: flex; gap: 8px; margin-top: 12px; }
-  .sync-card .row2 button { flex: 1; border: none; border-radius: 8px; padding: 11px; font-weight: 700; cursor: pointer; font-size: 13px; }
-  .sync-card .btn-save { background: #43a047; color: #fff; }
-  .sync-card .btn-restore { background: #fff; color: #2e7d32; border: 2px solid #2e7d32 !important; }
-  .sync-status { font-size: 11.5px; margin-top: 10px; min-height: 1.2em; }
-  .footer { font-size: 11px; color: #558b2f; text-align: center; margin-top: 20px; line-height: 1.5; }
+  .track-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+  .track-sym { font-size: 17px; font-weight: 800; color: #1b5e20; }
+  .track-detail { font-size: 13px; color: #2e7d32; line-height: 1.5; font-weight: 500; }
+
+  .sync-card { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 2px solid #a5d6a7; border-radius: 14px; padding: 18px 14px; margin-top: 18px; }
+  .sync-card h3 { color: #1b5e20; font-size: 17px; margin-bottom: 10px; font-weight: 800; }
+  .sync-card .hint { font-size: 13px; color: #2e7d32; line-height: 1.6; margin-bottom: 14px; font-weight: 500; }
+  .sync-card label { font-size: 13px; display: block; margin: 12px 0 5px; font-weight: 700; color: #2e7d32; }
+  .sync-card input { width: 100%; padding: 13px 12px; border-radius: 10px; font-size: 15px; box-sizing: border-box; font-weight: 500; border: 2px solid #a5d6a7; background: #ffffff; color: #1b5e20; }
+  .sync-card input:focus { outline: none; border-color: #43a047; box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.12); }
+  .row2 { display: flex; gap: 10px; margin-top: 16px; }
+  .row2 button { flex: 1; border: none; border-radius: 12px; padding: 15px 10px; font-weight: 800; cursor: pointer; font-size: 15px; transition: transform 0.1s; min-height: 52px; }
+  .row2 button:active { transform: scale(0.97); }
+  .sync-card .btn-save { background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); color: #fff; }
+  .sync-card .btn-restore { background: #fff; color: #1b5e20; border: 2px solid #2e7d32 !important; }
+  .sync-status { font-size: 13px; margin-top: 12px; min-height: 1.3em; font-weight: 600; line-height: 1.5; }
+
+  /* ===== Stock Filter Card ===== */
+  .stock-filter-card {
+    background: #ffffff;
+    border: 2px solid #c5e1a5;
+    border-radius: 14px;
+    padding: 18px 16px;
+    margin-top: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 3px 10px rgba(27, 94, 32, 0.08);
+  }
+  .stock-filter-card h3 {
+    color: #1b5e20;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .sf-btn {
+    display: block;
+    width: 100%;
+    padding: 15px 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15.5px;
+    font-weight: 800;
+    color: #ffffff;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    min-height: 52px;
+  }
+  .sf-btn:active { transform: scale(0.97); }
+  .sf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .sf-purple { background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%); }
+  .sf-green { background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); }
+  .sf-red { background: linear-gradient(135deg, #ef5350 0%, #c62828 100%); }
+
+  .sf-status {
+    background: #f9fbe7;
+    border: 1px solid #dcedc8;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 14px 0;
+  }
+  .sf-status-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1b5e20;
+    margin-bottom: 4px;
+  }
+  .sf-status-info {
+    font-size: 13.5px;
+    color: #2e7d32;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .sf-status-info.warn { color: #c62828; }
+  .sf-status-info.fresh { color: #2e7d32; }
+
+  .sf-links-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1b5e20;
+    margin-bottom: 6px;
+  }
+  .sf-links { margin-bottom: 12px; }
+  .sf-links a {
+    display: block;
+    color: #1565c0;
+    text-decoration: underline;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 3px 0;
+    line-height: 1.4;
+  }
+  .sf-note {
+    font-size: 12.5px;
+    color: #558b2f;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  /* Switch */
+  .fund-toggle-row { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 2px solid #90caf9; border-radius: 12px; padding: 12px 14px; margin: 14px 0; gap: 10px; }
+  .fund-toggle-row .switch-label { font-size: 14.5px; font-weight: 700; color: #0d47a1; line-height: 1.3; }
+  .fund-toggle-row .switch-sub { font-size: 12px; color: #1565c0; font-weight: 600; margin-top: 3px; line-height: 1.3; }
+  .fund-toggle-row .switch-sub.on { color: #1b5e20; }
+  .fund-toggle-row .switch-sub.off { color: #616161; }
+  .fund-switch { position: relative; display: inline-block; width: 48px; height: 28px; flex-shrink: 0; }
+  .fund-switch input { opacity: 0; width: 0; height: 0; }
+  .fund-switch .slider { position: absolute; cursor: pointer; inset: 0; background: #cfd8dc; border-radius: 28px; transition: 0.2s; }
+  .fund-switch .slider::before { content: ''; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px; background: #ffffff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .fund-switch input:checked + .slider { background: #1976d2; }
+  .fund-switch input:checked + .slider::before { transform: translateX(20px); }
+
+  /* ===== Collapsible Entry Tracker + Performance ===== */
+  .collapse-card {
+    background: #ffffff;
+    border: 2px solid #ff9800;
+    border-radius: 14px;
+    margin-top: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  }
+  .collapse-card summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 15px 16px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #bf360c;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .collapse-card summary::-webkit-details-marker { display: none; }
+  .collapse-card summary::after {
+    content: '▼';
+    font-size: 13px;
+    transition: transform 0.25s;
+    color: #bf360c;
+    flex-shrink: 0;
+  }
+  .collapse-card[open] summary::after { transform: rotate(180deg); }
+  .collapse-card .badge {
+    background: #ffe0b2;
+    color: #bf360c;
+    font-size: 12.5px;
+    padding: 4px 11px;
+    border-radius: 12px;
+    font-weight: 800;
+    margin-left: auto;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .collapse-card > div { padding: 0 12px 14px; }
+  #trackingWrap { border-color: #43a047; }
+  #trackingWrap summary { color: #1b5e20; }
+  #trackingWrap summary::after { color: #1b5e20; }
+  #trackingWrap .badge { background: #c8e6c9; color: #1b5e20; }
+  .collapse-card.hidden { display: none; }
+
+  .footer { font-size: 12px; color: #558b2f; text-align: center; margin-top: 24px; line-height: 1.6; font-weight: 500; }
+
   @media (min-width: 600px) {
-    body { padding: 20px; }
-    .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+    body { padding: 24px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 28px; }
     .btns { flex-direction: row; flex-wrap: wrap; }
     .btn { width: auto; flex: 1; min-width: 200px; }
     .stats { grid-template-columns: repeat(4, 1fr); }
-    .nse a { display: inline-block; margin: 5px; }
-    h1 { font-size: 26px; }
+    .nse a { display: inline-block; margin: 6px; min-width: 220px; }
+    h1 { font-size: 28px; }
+    .cn { font-size: 22px; }
+  }
+  @media (max-width: 360px) {
+    html { font-size: 15px; }
+    body { padding: 8px; font-size: 15px; }
+    .container { padding: 14px 10px; border-radius: 12px; }
+    h1 { font-size: 19px; }
+    .cn { font-size: 18px; }
+    .stat .n { font-size: 24px; }
+    .cd { grid-template-columns: 1fr 1fr; }
+    .sync-card .row2 { flex-direction: column; }
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🛡️ NSE Scanner - MACD Safe Mode Pro</h1>
-  <p class="sub">MACD + Breakout + Momentum + Safe Mode + Excel + Portfolio + Entry Tracker</p>
+  <h1>🛡️ NSE Scanner Pro</h1>
+  <p class="sub">MACD + Breakout + Fundamental Filter + Entry Tracker</p>
 
-  <div class="info">✅ Score 75+ | Strong 100+ | RSI 40-65 | R:R 1.5+ | Volume 1.5x+ | Entry Auto-Track</div>
+  <div class="info">✅ Score 75+ | Strong 110+ | RSI 40-65 | R:R 1.5+ | Volume 1.5x+</div>
 
   <div id="reminderBanner"></div>
   <div id="dataStatus" class="status">📊 હાલ કોઈ ડેટા નથી</div>
 
   <div class="nse">
-    <h2>📥 BhavCopy ડાઉનલોડ કરો</h2>
-    <a id="nseTodayLink" href="#" target="_blank">📅 આજની (સીધી) ફાઈલ ડાઉનલોડ</a>
+    <h2>📥 BhavCopy ડાઉનલોડ</h2>
+    <a id="nseTodayLink" href="#" target="_blank">📅 આજની BhavCopy ફાઈલ</a>
     <a href="https://www.nseindia.com/all-reports" target="_blank">🔗 NSE BhavCopy પેજ</a>
     <a href="https://www.nseindia.com/resources/historical-reports-capital-market-daily-monthly-archives" target="_blank">📊 Historical Data</a>
   </div>
 
-  <label class="upload multi" for="zipMulti">
-    <input type="file" id="zipMulti" accept=".zip" multiple onchange="handleMultiZip(event, 'bulk')">
-    <div class="ico">📦📦📦</div>
-    <div class="txt">પહેલી વાર: 35+ ZIP એકસાથે અપલોડ કરો</div>
-    <div class="sm">MACD માટે 35+ દિવસ જોઈએ</div>
-  </label>
-
-  <label class="upload daily" for="zipDaily">
-    <input type="file" id="zipDaily" accept=".zip" onchange="handleMultiZip(event, 'daily')">
-    <div class="ico">📥</div>
-    <div class="txt">રોજ 1 ZIP ઉમેરો (Market બંધ પછી)</div>
-    <div class="sm">નવો દિવસ + Entry Check</div>
+  <label class="upload multi" for="zipUpload">
+    <input type="file" id="zipUpload" accept=".zip" multiple onchange="handleMultiZip(event, 'auto')">
+    <div class="ico">📦</div>
+    <div class="txt">ZIP Upload કરો</div>
+    <div class="sm">પહેલી વાર 60 ZIP | રોજ 1 ZIP — બધું ચાલશે</div>
   </label>
 
   <div class="btns">
     <button class="btn btn-load" onclick="loadFromDB()">🔄 ડેટા લોડ કરો</button>
     <button class="btn btn-export" onclick="exportExcel()">📥 Excel Export</button>
-    <button class="btn btn-portfolio" onclick="exportPortfolio()">📊 Portfolio Export (1 Share, Confirm Entry)</button>
+    <button class="btn btn-portfolio" onclick="exportPortfolio()">📊 Portfolio Export</button>
     <button class="btn btn-del" onclick="deleteDB()">🗑️ બધો ડેટા ડિલીટ</button>
   </div>
 
   <div class="stats">
     <div class="stat"><div class="n" id="totalDays">0</div><div class="l">કુલ દિવસ</div></div>
     <div class="stat clickable active" id="statAll" onclick="filterStocks('all')"><div class="n" id="totalStocks">0</div><div class="l">કુલ શેર</div></div>
-    <div class="stat clickable" id="statBuy" onclick="filterStocks('buy')"><div class="n" id="buySignals" style="color:#2e7d32;">0</div><div class="l">Buy Signal (75+)</div></div>
-    <div class="stat clickable" id="statStrong" onclick="filterStocks('strong')"><div class="n" id="strongBuys" style="color:#43a047;">0</div><div class="l">Strong Buy (100+)</div></div>
+    <div class="stat clickable" id="statBuy" onclick="filterStocks('buy')"><div class="n" id="buySignals" style="color:#2e7d32;">0</div><div class="l">Buy (75+)</div></div>
+    <div class="stat clickable" id="statStrong" onclick="filterStocks('strong')"><div class="n" id="strongBuys" style="color:#43a047;">0</div><div class="l">Strong (110+)</div></div>
   </div>
 
-  <div id="entryTracker"></div>
-  <div id="trackingResult"></div>
-  <input type="text" id="searchBox" class="search-box" placeholder="🔍 શેર શોધો (જેમ કે RELIANCE, TCS)" oninput="searchStock()">
+  <input type="text" id="searchBox" class="search-box" placeholder="🔍 શેર શોધો (RELIANCE, TCS)" oninput="searchStock()">
   <div id="results"><div class="empty">📂 ઉપર ZIP ફાઈલ અપલોડ કરો</div></div>
 
+  <!-- Entry Tracker -->
+  <details class="collapse-card" id="entryTrackerWrap">
+    <summary>
+      <span>🎯 Entry Tracker</span>
+      <span class="badge" id="entryTrackerBadge">0</span>
+    </summary>
+    <div id="entryTracker"></div>
+  </details>
+
+  <!-- Performance -->
+  <details class="collapse-card" id="trackingWrap">
+    <summary>
+      <span>📊 Performance</span>
+      <span class="badge" id="trackingBadge">—</span>
+    </summary>
+    <div id="trackingResult"></div>
+  </details>
+
+  <!-- ===== STOCK FILTER CARD ===== -->
+  <div class="stock-filter-card">
+    <h3>🎯 Stock Filter</h3>
+    
+    <button class="sf-btn sf-purple" id="sfQualityBtn" onclick="loadQualityStocks()">
+      ⭐ Quality Stocks Load કરો
+    </button>
+    
+    <button class="sf-btn sf-green" onclick="document.getElementById('niftyCsv').click()">
+      📊 Nifty CSV પસંદ કરો
+    </button>
+    <input type="file" id="niftyCsv" accept=".csv" multiple onchange="handleIndexCsv(event)" style="display:none;">
+    
+    <div class="sf-status" id="sfStatus">
+      <div class="sf-status-title" id="sfStatusTitle">કોઈ ડેટા નથી</div>
+      <div class="sf-status-info" id="sfStatusInfo">Load કરો અથવા CSV upload કરો</div>
+    </div>
+    
+    <div class="sf-links-title">NSE થી download કરો:</div>
+    <div class="sf-links">
+      <a href="https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv" target="_blank">Nifty 500 CSV</a>
+      <a href="https://nsearchives.nseindia.com/content/indices/ind_nifty200list.csv" target="_blank">Nifty 200 CSV</a>
+      <a href="https://nsearchives.nseindia.com/content/indices/ind_niftytotalmarket_list.csv" target="_blank">Nifty Total Market</a>
+    </div>
+    
+    <div class="sf-note">
+      Quality button = ~290 fundamentally strong companies (ROE>15%, ઓછું loan).<br>
+      Nifty CSV = index-based filter. 30 દિવસ પછી reminder આવશે.
+    </div>
+    
+    <!-- ===== SWITCH ===== -->
+    <div class="fund-toggle-row">
+      <div style="flex:1;">
+        <div class="switch-label">🏛️ ફક્ત પસંદ કરેલા શેર સ્કેન કરો</div>
+        <div class="switch-sub off" id="fundToggleSub">બંધ — બધા શેર સ્કેન થશે</div>
+      </div>
+      <label class="fund-switch">
+        <input type="checkbox" id="fundToggleBtn">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <button class="sf-btn sf-red" onclick="clearFundamentals()">
+      🗑️ Filter કાઢો
+    </button>
+  </div>
+
+  <!-- Cloud Sync -->
   <div class="sync-card">
     <h3>☁️ GitHub Cloud Sync</h3>
-    <p class="hint">ડેટા તમારા private GitHub repo માં જાય છે. ZIP upload પછી આપોઆપ sync થશે.</p>
+    <p class="hint">ડેટા private GitHub repo માં જાય છે. ZIP upload પછી આપોઆપ sync થશે.</p>
     <label>GitHub Username</label>
     <input type="text" id="ghOwner" placeholder="bhavikpeepee02-8966">
     <label>Repo નામ</label>
     <input type="text" id="ghRepo" placeholder="Bvkdatabkp">
     <label>Personal Access Token</label>
     <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
-    <label>ફાઈલ નામ (repo માં)</label>
+    <label>ફાઈલ નામ</label>
     <input type="text" id="ghPath" placeholder="nse-scanner-macd-pro.json">
     <div class="row2">
       <button class="btn-save" id="ghSaveBtn">⬆️ Cloud Save</button>
@@ -186,39 +427,42 @@
 </div>
 
 <script>
+/* ===== Constants ===== */
 const DB_NAME = 'NSE_DB_PRO';
+const DB_VERSION = 14;
 const STORE = 'stocks';
 const META = 'meta';
 const SIGNALS = 'signals';
+
 const MAX_DAYS = 60;
+const SIGNAL_RETENTION_DAYS = 90;
+const STALE_SIGNAL_DAYS = 15;
+const INDEX_REFRESH_DAYS = 30;
 
-const SL_PCT = 3;
-const TARGET_MIN = 5;
-const TARGET_MAX = 15;
-const MIN_SCORE = 75;
-const STRONG_SCORE = 100;
-const MIN_DAYS = 20;
-const MIN_DAYS_MACD = 26;
-const MIN_RR = 1.5;
-const RSI_MIN = 40;
-const RSI_MAX = 65;
+const SL_PCT = 3, TARGET_MIN = 5, TARGET_MAX = 15;
+const MIN_SCORE = 75, STRONG_SCORE = 110;
+const MAX_SCORE = 133;
+const MIN_DAYS = 20, MIN_DAYS_MACD = 26;
+const MIN_RR = 1.5, RSI_MIN = 40, RSI_MAX = 65;
+const REQUIRE_VOL_CONFIRM = true, MAX_CHANGE_PCT = 10, ATR_TARGET_MULT = 2;
+const ENTRY_VALID_DAYS = 5, CLOUD_OHLCV_DAYS = 15;
 
-const REQUIRE_VOL_CONFIRM = true;
-const MAX_CHANGE_PCT = 10;
-const ATR_TARGET_MULT = 2;
-
-const ENTRY_VALID_DAYS = 5;
-
+/* ===== State ===== */
 let db = null;
 let stockData = {};
 let allStocks = [];
 let currentFilter = 'all';
 let searchTerm = '';
 let dataGap = 0;
+let suppressAutoSync = false;
+let fundamentalFilter = { mode: 'off', symbols: [], symbolSet: new Set() };
+let autoSyncTimer = null;
+let syncInFlight = false;
 
+/* ===== DB helpers ===== */
 function openDB() {
   return new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 9);
+    const r = indexedDB.open(DB_NAME, DB_VERSION);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
@@ -227,127 +471,394 @@ function openDB() {
     };
     r.onsuccess = e => { db = e.target.result; res(db); };
     r.onerror = e => rej(e.target.error);
-    r.onblocked = () => rej(new Error('બીજી ટેબ/વિન્ડોમાં આ જ App ખુલ્લી છે — એને બંધ કરી ફરી ટ્રાય કરો'));
+    r.onblocked = () => rej(new Error('બીજી ટેબમાં App ખુલ્લી છે'));
   });
 }
 async function ensureDB() { if (!db) await openDB(); return db; }
-function saveDB(store, key, val) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readwrite'); const req = tx.objectStore(store).put(val, key); req.onsuccess = () => res(); req.onerror = e => rej(e.target.error); })); }
-function getDB(store, key) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readonly'); const req = tx.objectStore(store).get(key); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); })); }
-function getAllDB(store) { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction(store, 'readonly'); const req = tx.objectStore(store).getAll(); req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error); })); }
-function clearDB() { return ensureDB().then(d => new Promise((res, rej) => { const tx = d.transaction([STORE, META, SIGNALS], 'readwrite'); tx.objectStore(STORE).clear(); tx.objectStore(META).clear(); tx.objectStore(SIGNALS).clear(); tx.oncomplete = () => res(); tx.onerror = e => rej(e.target.error); })); }
 
-function nseLinkForDate(isoDate) {
-  const [y, m, d] = isoDate.split('-');
-  return `https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${y}${m}${d}_F_0000.csv.zip`;
+const dbWriteListeners = [];
+function onDBWrite(fn) { dbWriteListeners.push(fn); }
+function notifyDBWrite(store, key) {
+  for (const fn of dbWriteListeners) {
+    try { fn(store, key); } catch (e) { console.warn('DB listener error:', e); }
+  }
+}
+
+function saveDB(s, k, v) {
+  return ensureDB().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(s, 'readwrite');
+    const r = tx.objectStore(s).put(v, k);
+    r.onsuccess = () => { notifyDBWrite(s, k); res(); };
+    r.onerror = e => rej(e.target.error);
+  }));
+}
+function getDB(s, k) {
+  return ensureDB().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(s, 'readonly');
+    const r = tx.objectStore(s).get(k);
+    r.onsuccess = () => res(r.result);
+    r.onerror = e => rej(e.target.error);
+  }));
+}
+function getAllDB(s) {
+  return ensureDB().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(s, 'readonly');
+    const r = tx.objectStore(s).getAll();
+    r.onsuccess = () => res(r.result);
+    r.onerror = e => rej(e.target.error);
+  }));
+}
+function deleteDBKey(s, k) {
+  return ensureDB().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(s, 'readwrite');
+    tx.objectStore(s).delete(k);
+    tx.oncomplete = () => res();
+    tx.onerror = e => rej(e.target.error);
+  }));
+}
+function clearDB() {
+  return ensureDB().then(d => new Promise((res, rej) => {
+    const tx = d.transaction([STORE, META, SIGNALS], 'readwrite');
+    tx.objectStore(STORE).clear();
+    tx.objectStore(META).clear();
+    tx.objectStore(SIGNALS).clear();
+    tx.oncomplete = () => res();
+    tx.onerror = e => rej(e.target.error);
+  }));
+}
+
+/* ===== Utils ===== */
+function nseLinkForDate(d) {
+  const [y, m, dd] = d.split('-');
+  return `https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${y}${m}${dd}_F_0000.csv.zip`;
 }
 function todayIsoLocal() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
+function parseYYYYMMDD(s) { return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8)); }
+function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoCompact(d) { return d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate()); }
 
-function parseYYYYMMDD(s) { return new Date(Number(s.slice(0,4)), Number(s.slice(4,6)) - 1, Number(s.slice(6,8))); }
-const NSE_HOLIDAYS_2026 = new Set([
-  '20260115', // Maharashtra Municipal Corp Election
-  '20260126', // Republic Day
-  '20260303', // Holi
-  '20260326', // Ram Navami
-  '20260331', // Mahavir Jayanti
-  '20260403', // Good Friday
-  '20260414', // Dr. Ambedkar Jayanti
-  '20260501', // Maharashtra Day
-  '20260528', // Bakri Id
-  '20260626', // Muharram
-  '20260914', // Ganesh Chaturthi
-  '20261002', // Gandhi Jayanti
-  '20261020', // Dussehra
-  '20261110', // Diwali Balipratipada
-  '20261124', // Guru Nanak Jayanti
-  '20261225'  // Christmas
+const NSE_HOLIDAYS = new Set([
+  '20250226','20250314','20250331','20250410','20250414','20250418','20250501','20250815','20250827','20251002','20251021','20251022','20251105','20251225',
+  '20260115','20260126','20260303','20260326','20260331','20260403','20260414','20260501','20260528','20260626','20260914','20261002','20261020','20261110','20261124','20261225'
 ]);
+
+function isTradingDay(d) {
+  const wd = d.getDay();
+  if (wd === 0 || wd === 6) return false;
+  return !NSE_HOLIDAYS.has(isoCompact(d));
+}
 function tradingDaysBetween(d1, d2) {
-  // Counts trading days strictly between d1 and d2 (exclusive), skipping weekends & NSE holidays
-  let count = 0;
-  const cur = new Date(d1);
-  cur.setDate(cur.getDate() + 1);
-  while (cur < d2) {
-    const wd = cur.getDay();
-    const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
-    if (wd !== 0 && wd !== 6 && !NSE_HOLIDAYS_2026.has(ds)) count++;
-    cur.setDate(cur.getDate() + 1);
+  const s = midnight(d1), e = midnight(d2);
+  let c = 0;
+  const cur = new Date(s); cur.setDate(cur.getDate()+1);
+  while (cur < e) {
+    if (isTradingDay(cur)) c++;
+    cur.setDate(cur.getDate()+1);
   }
-  return count;
+  return c;
 }
 function detectGap(dates) {
   if (!dates || dates.length < 2) return 0;
-  let maxGap = 0;
+  let mg = 0;
   for (let i = 1; i < dates.length; i++) {
-    const d1 = parseYYYYMMDD(dates[i-1]);
-    const d2 = parseYYYYMMDD(dates[i]);
-    let missing = 0;
-    const cur = new Date(d1);
-    cur.setDate(cur.getDate() + 1);
+    const d1 = parseYYYYMMDD(dates[i-1]), d2 = parseYYYYMMDD(dates[i]);
+    let miss = 0;
+    const cur = new Date(d1); cur.setDate(cur.getDate()+1);
     while (cur < d2) {
-      const wd = cur.getDay();
-      const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
-      if (wd !== 0 && wd !== 6 && !NSE_HOLIDAYS_2026.has(ds)) missing++;
-      cur.setDate(cur.getDate() + 1);
+      if (isTradingDay(cur)) miss++;
+      cur.setDate(cur.getDate()+1);
     }
-    if (missing > maxGap) maxGap = missing;
+    if (miss > mg) mg = miss;
   }
-  return maxGap;
+  return mg;
 }
 function getMissingDates(dates) {
   if (!dates || dates.length < 2) return [];
-  const dateSet = new Set(dates);
-  const missing = [];
-  const start = parseYYYYMMDD(dates[0]);
-  const end = parseYYYYMMDD(dates[dates.length - 1]);
-  const cur = new Date(start);
-  cur.setDate(cur.getDate() + 1);
+  const set = new Set(dates), miss = [];
+  const cur = new Date(parseYYYYMMDD(dates[0])); cur.setDate(cur.getDate()+1);
+  const end = parseYYYYMMDD(dates[dates.length-1]);
   while (cur < end) {
-    const wd = cur.getDay();
-    if (wd !== 0 && wd !== 6) {
-      const ds = cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + String(cur.getDate()).padStart(2,'0');
-      if (!dateSet.has(ds) && !NSE_HOLIDAYS_2026.has(ds)) missing.push(ds);
+    if (isTradingDay(cur)) {
+      const ds = isoCompact(cur);
+      if (!set.has(ds)) miss.push(ds);
     }
-    cur.setDate(cur.getDate() + 1);
+    cur.setDate(cur.getDate()+1);
   }
-  return missing;
+  return miss;
 }
 function fmtDateShort(ds) { return ds.slice(6,8) + '-' + ds.slice(4,6); }
+function fmtDateFull(ds) { return ds.slice(6,8) + '-' + ds.slice(4,6) + '-' + ds.slice(0,4); }
+function getLastTradingDayIso() {
+  const d = new Date();
+  for (let i = 0; i < 14; i++) {
+    if (isTradingDay(d)) return isoCompact(d);
+    d.setDate(d.getDate()-1);
+  }
+  return todayIsoLocal().replace(/-/g,'');
+}
 
+/* ===== Index CSV Upload ===== */
+async function handleIndexCsv(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  const allSymbols = new Set();
+  for (const file of files) {
+    try {
+      const text = await file.text();
+      const symbols = parseCsvSymbols(text);
+      symbols.forEach(s => allSymbols.add(s));
+    } catch (e) { console.log('CSV error', file.name, e); }
+  }
+  const symbols = Array.from(allSymbols).sort();
+  if (!symbols.length) { alert('❌ કોઈ symbols મળ્યા નહીં'); return; }
+
+  await saveDB(META, 'indexConstituents', {
+    symbols, count: symbols.length,
+    loadedAt: new Date().toISOString(),
+    source: files.map(f => f.name).join(', ')
+  });
+
+  fundamentalFilter = { mode: 'whitelist', symbols, symbolSet: new Set(symbols) };
+  await saveDB(META, 'fundamentals', { mode: 'whitelist', symbols, updatedAt: new Date().toISOString() });
+
+  updateFundToggle();
+  updateStockFilterStatus();
+  analyze();
+
+  alert('✅ ' + symbols.length + ' symbols index CSV થી load થયા!\nFiles: ' + files.length + '\nWhitelist auto-activate થઈ ગયું.');
+}
+
+function parseCsvSymbols(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,'').toLowerCase());
+  let symIdx = headers.findIndex(h => h === 'symbol' || h === 'nse code' || h === 'code' || h === 'ticker');
+  if (symIdx === -1) symIdx = 2;
+  const symbols = new Set();
+  for (let i = 1; i < lines.length; i++) {
+    const parts = [];
+    let cur = '', inQ = false;
+    for (const ch of lines[i]) {
+      if (ch === '"') inQ = !inQ;
+      else if (ch === ',' && !inQ) { parts.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    parts.push(cur.trim());
+    const sym = (parts[symIdx] || '').toUpperCase().replace(/[^A-Z0-9&-]/g,'');
+    if (sym && sym.length < 20) symbols.add(sym);
+  }
+  return Array.from(symbols).sort();
+}
+
+/* ===== Stock Filter Card ===== */
+async function loadQualityStocks() {
+  const btn = document.getElementById('sfQualityBtn');
+  if (!btn) return;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Load થાય છે...';
+  btn.disabled = true;
+  
+  const info = document.getElementById('sfStatusInfo');
+  if (info) {
+    info.textContent = 'NSE thi fetch થાય છે...';
+    info.className = 'sf-status-info';
+  }
+  
+  try {
+    let symbols = [];
+    
+    // Pehla try: NSE thi direct fetch (CORS issue hoi shake)
+    try {
+      const r = await fetch('https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv');
+      if (r.ok) {
+        const text = await r.text();
+        symbols = parseCsvSymbols(text);
+      }
+    } catch (e) {
+      console.log('NSE fetch failed:', e.message);
+    }
+    
+    // Fallback: stored list
+    if (!symbols.length) {
+      const stored = await getDB(META, 'indexConstituents');
+      if (stored && stored.symbols && stored.symbols.length) {
+        symbols = stored.symbols;
+        if (info) info.textContent = '⚠️ NSE fetch fail — stored list use thai';
+      }
+    }
+    
+    if (!symbols.length) {
+      alert('❌ NSE thi fetch ન થયું.\n\nNifty CSV manually download karo:\n"📊 Nifty CSV પસંદ કરો" dabavo.');
+      if (info) {
+        info.textContent = '❌ Fetch fail — manual CSV upload karo';
+        info.className = 'sf-status-info warn';
+      }
+      btn.textContent = origText;
+      btn.disabled = false;
+      return;
+    }
+    
+    // Save
+    await saveDB(META, 'indexConstituents', {
+      symbols: symbols,
+      count: symbols.length,
+      loadedAt: new Date().toISOString(),
+      source: 'Quality Stocks (auto)'
+    });
+    
+    fundamentalFilter = { mode: 'whitelist', symbols, symbolSet: new Set(symbols) };
+    await saveDB(META, 'fundamentals', { mode: 'whitelist', symbols, updatedAt: new Date().toISOString() });
+    
+    updateFundToggle();
+    updateStockFilterStatus();
+    analyze();
+    
+    alert('✅ ' + symbols.length + ' Quality stocks load થયા!\n\nWhitelist auto-activate થઈ ગયું.\nHave scanner fakt aa stocks scan kare.');
+  } catch (err) {
+    alert('❌ Error: ' + err.message);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+async function updateStockFilterStatus() {
+  const title = document.getElementById('sfStatusTitle');
+  const info = document.getElementById('sfStatusInfo');
+  if (!title || !info) return;
+  
+  const idx = await getDB(META, 'indexConstituents');
+  if (!idx || !idx.loadedAt) {
+    title.textContent = 'કોઈ ડેટા નથી';
+    info.textContent = 'Load કરો અથવા CSV upload કરો';
+    info.className = 'sf-status-info';
+    return;
+  }
+  
+  const days = Math.floor((Date.now() - new Date(idx.loadedAt).getTime()) / 86400000);
+  const dateStr = new Date(idx.loadedAt).toISOString().slice(0, 10);
+  const dayText = days === 0 ? 'આજે' : (days === 1 ? '1 દિવસ' : days + ' દિવસ');
+  
+  title.textContent = (idx.source || 'Index') + ' — ' + idx.count + ' stocks';
+  
+  let cls = 'sf-status-info';
+  if (days >= INDEX_REFRESH_DAYS) cls += ' warn';
+  else if (days <= 7) cls += ' fresh';
+  
+  info.innerHTML = `અપડેટ: <b>${dateStr}</b> (${dayText})`;
+  info.className = cls;
+}
+
+/* ===== Fund Toggle (Switch) ===== */
+function updateFundToggle() {
+  const toggle = document.getElementById('fundToggleBtn');
+  const sub = document.getElementById('fundToggleSub');
+  if (!toggle || !sub) return;
+  
+  const on = fundamentalFilter.mode === 'whitelist';
+  const n = fundamentalFilter.symbols.length;
+  
+  toggle.checked = on;
+  
+  if (!on) {
+    sub.className = 'switch-sub off';
+    sub.textContent = 'બંધ — બધા શેર સ્કેન થશે';
+    sub.style.color = '';
+  } else if (n === 0) {
+    sub.className = 'switch-sub on';
+    sub.textContent = 'ચાલુ — પણ list ખાલી છે ⚠️';
+    sub.style.color = '#c62828';
+  } else {
+    sub.className = 'switch-sub on';
+    sub.textContent = 'ચાલુ — ફક્ત ' + n + ' શેર સ્કેન થશે ✅';
+    sub.style.color = '#1b5e20';
+  }
+}
+
+async function saveFundamentals() {
+  const mode = fundamentalFilter.mode;
+  const symbols = fundamentalFilter.symbols;
+  await saveDB(META, 'fundamentals', { mode, symbols, updatedAt: new Date().toISOString() });
+  analyze();
+}
+
+async function clearFundamentals() {
+  if (!confirm('Whitelist clear કરવો? (Index list pan jashe)')) return;
+  await saveDB(META, 'fundamentals', { mode: 'off', symbols: [] });
+  await deleteDBKey(META, 'indexConstituents');
+  fundamentalFilter = { mode: 'off', symbols: [], symbolSet: new Set() };
+  updateFundToggle();
+  updateStockFilterStatus();
+  analyze();
+}
+
+/* ===== Cleanup ===== */
+async function cleanupOldSignals() {
+  try {
+    const allSigs = await getAllDB(SIGNALS);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - SIGNAL_RETENTION_DAYS);
+    const cutoffStr = isoCompact(cutoff);
+    let deleted = 0;
+    for (const sd of allSigs) {
+      if (!sd || !sd.date || sd.date >= cutoffStr) continue;
+      const allRes = Array.isArray(sd.stocks) && sd.stocks.length > 0 &&
+        sd.stocks.every(s => s.status === 'target' || s.status === 'sl' || s.status === 'expired');
+      if (allRes) { await deleteDBKey(SIGNALS, 'signal_' + sd.date); deleted++; }
+    }
+    return deleted;
+  } catch (e) { return 0; }
+}
+
+/* ===== BhavCopy Upload ===== */
 async function handleMultiZip(event, mode) {
-  const files = Array.from(event.target.files);
-  if (files.length === 0) return;
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  
+  if (mode === 'auto') {
+    mode = files.length === 1 ? 'daily' : 'bulk';
+  }
+  
+  if (mode === 'daily' && files.length > 1) {
+    files.sort((a, b) => b.name.localeCompare(a.name));
+    files.splice(1);
+  }
+  
   const res = document.getElementById('results');
   res.innerHTML = `<div class="load"><div class="spin"></div>${files.length} ZIP મળી<br>પ્રોસેસ શરૂ...</div>`;
-  const skippedFiles = [];
+  const skipped = [];
   try {
     let existingData = await getDB(STORE, 'all') || {};
     let latestDate = '';
     for (const sym in existingData) {
       const arr = existingData[sym];
-      if (arr.length > 0) { const d = arr[arr.length - 1].date; if (d > latestDate) latestDate = d; }
+      if (arr.length > 0) {
+        const d = arr[arr.length-1].date;
+        if (d > latestDate) latestDate = d;
+      }
     }
     for (let f = 0; f < files.length; f++) {
       const file = files[f];
-      res.innerHTML = `<div class="load"><div class="spin"></div>ફાઈલ ${f+1} / ${files.length}<br><small>${file.name}</small></div>`;
-      let fileFoundCsv = false;
+      res.innerHTML = `<div class="load"><div class="spin"></div>ફાઈલ ${f+1}/${files.length}<br><small style="font-size:13px;">${file.name}</small></div>`;
       try {
         const zip = await JSZip.loadAsync(file);
-        const csvs = Object.keys(zip.files).filter(n => n.toLowerCase().endsWith('.csv') && n.toLowerCase().includes('bhavcopy'));
-        if (csvs.length === 0) { skippedFiles.push({ name: file.name, reason: 'BhavCopy CSV ના મળી' }); }
+        const csvs = Object.keys(zip.files).filter(n =>
+          n.toLowerCase().endsWith('.csv') && n.toLowerCase().includes('bhavcopy')
+        );
+        if (!csvs.length) skipped.push({ name: file.name, reason: 'BhavCopy CSV ના મળી' });
         for (const fn of csvs) {
-          fileFoundCsv = true;
-          let fileRowsAdded = 0;
+          let added = 0;
           const content = await zip.files[fn].async('string');
           const dm = fn.match(/(\d{8})/);
           const date = dm ? dm[1] : '';
-          if (!date) { skippedFiles.push({ name: file.name, reason: 'ફાઈલ નામમાંથી તારીખ ના મળી' }); continue; }
+          if (!date) { skipped.push({ name: file.name, reason: 'તારીખ ના મળી' }); continue; }
           if (date > latestDate) latestDate = date;
           const lines = content.split('\n');
-          if (lines.length < 2) { skippedFiles.push({ name: file.name, reason: 'CSV ખાલી છે' }); continue; }
-          const h = lines[0].split(',').map(s => s.trim().replace(/"/g, ''));
+          if (lines.length < 2) { skipped.push({ name: file.name, reason: 'CSV ખાલી' }); continue; }
+          const h = lines[0].split(',').map(s => s.trim().replace(/"/g,''));
           const iSym = h.indexOf('TckrSymb');
           const iSer = h.indexOf('SctySrs');
           const iOp = h.indexOf('OpnPric');
@@ -355,134 +866,133 @@ async function handleMultiZip(event, mode) {
           const iLo = h.indexOf('LwPric');
           const iCl = h.indexOf('ClsPric');
           const iVol = h.indexOf('TtlTradgVol');
-          if (iSym === -1 || iCl === -1) { skippedFiles.push({ name: file.name, reason: 'જરૂરી કોલમ (Symbol/Close) ના મળી' }); continue; }
+          const iPrev = h.indexOf('PrvsClsgPric');
+          if (iSym === -1 || iCl === -1) { skipped.push({ name: file.name, reason: 'કોલમ ના મળી' }); continue; }
           for (let i = 1; i < lines.length; i++) {
-            const p = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
+            const p = lines[i].split(',').map(s => s.trim().replace(/"/g,''));
             if (p.length < h.length) continue;
             if (iSer !== -1 && p[iSer] !== 'EQ') continue;
             const c = parseFloat(p[iCl]);
             const v = parseFloat(p[iVol]);
             if (isNaN(c) || isNaN(v)) continue;
             const sym = p[iSym];
+            if (!sym) continue;
             if (!existingData[sym]) existingData[sym] = [];
-            const exists = existingData[sym].some(x => x.date === date);
-            if (exists) continue;
+            if (existingData[sym].some(x => x.date === date)) continue;
+            const prevC = iPrev !== -1 ? parseFloat(p[iPrev]) : NaN;
             existingData[sym].push({
               date,
               o: parseFloat(p[iOp]),
               h: parseFloat(p[iHi]),
               l: parseFloat(p[iLo]),
-              c, v
+              c,
+              v,
+              prevC: isNaN(prevC) ? null : prevC
             });
-            fileRowsAdded++;
+            added++;
           }
-          if (fileRowsAdded === 0) { skippedFiles.push({ name: file.name, reason: 'આ તારીખ (' + date + ') નો ડેટા પહેલેથી લોડ થયેલો છે' }); }
+          if (added === 0) skipped.push({ name: file.name, reason: 'ડેટા પહેલેથી (' + date + ')' });
         }
-      } catch (err) { skippedFiles.push({ name: file.name, reason: err.message }); console.log('Error:', file.name, err); }
+      } catch (err) {
+        skipped.push({ name: file.name, reason: err.message || 'unknown error' });
+      }
     }
     stockData = existingData;
     const allDates = new Set();
-    for (const sym in stockData) { stockData[sym].forEach(x => allDates.add(x.date)); }
+    for (const sym in stockData) stockData[sym].forEach(x => allDates.add(x.date));
     const sortedDates = Array.from(allDates).sort();
-    let keptDates = sortedDates;
-    let removedCount = 0;
+    let keptDates = sortedDates, removedCount = 0;
     if (sortedDates.length > MAX_DAYS) {
       removedCount = sortedDates.length - MAX_DAYS;
       const removedDates = sortedDates.slice(0, removedCount);
       keptDates = sortedDates.slice(removedCount);
-      const removedSet = new Set(removedDates);
-      for (const sym in stockData) { stockData[sym] = stockData[sym].filter(x => !removedSet.has(x.date)); }
+      const rSet = new Set(removedDates);
+      for (const sym in stockData) {
+        stockData[sym] = stockData[sym].filter(x => !rSet.has(x.date));
+      }
     }
-    for (const sym in stockData) { stockData[sym].sort((a, b) => a.date.localeCompare(b.date)); }
-    for (const sym in stockData) { if (stockData[sym].length === 0) delete stockData[sym]; }
+    for (const sym in stockData) stockData[sym].sort((a, b) => a.date.localeCompare(b.date));
+    for (const sym in stockData) if (stockData[sym].length === 0) delete stockData[sym];
+
     document.getElementById('totalDays').textContent = keptDates.length;
     dataGap = detectGap(keptDates);
     res.innerHTML = '<div class="load"><div class="spin"></div>ડેટા સેવ થાય છે...</div>';
+
     await saveDB(STORE, 'all', stockData);
     await saveDB(META, 'info', {
       days: keptDates.length,
       stocks: Object.keys(stockData).length,
-      dateRange: keptDates.length > 0 ? keptDates[0] + ' → ' + keptDates[keptDates.length - 1] : '-',
+      dateRange: keptDates.length ? keptDates[0] + ' → ' + keptDates[keptDates.length-1] : '-',
       removed: removedCount,
       gap: dataGap,
       dates: keptDates
     });
-    if (latestDate) { await checkPreviousSignals(latestDate); }
-    updateStatus();
+    await cleanupOldSignals();
+    if (latestDate) await checkPreviousSignals(latestDate);
+    await updateStatus();
     analyze();
     const actualLatestDate = getLatestDate().raw;
-    if (allStocks.length > 0 && actualLatestDate) { await saveSignals(allStocks, actualLatestDate); }
-    pushToCloud(true);
+    if (allStocks.length && actualLatestDate) await saveSignals(allStocks, actualLatestDate);
     await refreshReminder();
-    if (skippedFiles.length > 0) {
-      const list = skippedFiles.map(s => `<li><b>${s.name}</b>: ${s.reason}</li>`).join('');
-      document.getElementById('reminderBanner').innerHTML += `<div class="reminder warn">⚠️ ${files.length} માંથી ${skippedFiles.length} ફાઈલ પ્રોસેસ ના થઈ:<ul style="margin:6px 0 0 18px;">${list}</ul></div>`;
+    if (skipped.length) {
+      const list = skipped.map(s => `<li style="margin:4px 0;"><b>${s.name}</b>: ${s.reason}</li>`).join('');
+      document.getElementById('reminderBanner').innerHTML +=
+        `<div class="reminder warn">⚠️ ${skipped.length} ફાઈલ પ્રોસેસ ના થઈ:<ul style="margin:8px 0 0 18px;">${list}</ul></div>`;
     }
   } catch (err) {
     res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>';
+  } finally {
+    event.target.value = '';
   }
 }
 
 async function saveSignals(stocks, date) {
-  const existing = await getDB(SIGNALS, 'signal_' + date);
-  if (existing) return;
-  const buyStocks = stocks.filter(s => s.score >= MIN_SCORE);
-  const data = {
-    date: date,
-    stocks: buyStocks.slice(0, 20).map(s => {
-      const actualEntry = s.confirmAbove;
-      const targetPct = s.profitPct;
-      const newSl = actualEntry * (1 - SL_PCT / 100);
-      const newT1 = actualEntry * (1 + targetPct / 100);
-      const newT2 = newT1 * 1.05;
-      const newRR = (newT1 - actualEntry) / (actualEntry - newSl);
-      return {
-        sym: s.sym,
-        signalClose: s.price,
-        entry: actualEntry,
-        sl: newSl,
-        t1: newT1,
-        t2: newT2,
-        rr: newRR,
-        confirmAbove: s.confirmAbove,
-        requiredVolume: s.requiredVolume,
-        score: s.score,
-        profitPct: targetPct,
-        status: 'pending', exitPrice: null, profit: 0, resultDate: null,
-        entryStatus: 'waiting', entryDate: null, entryPrice: null, entryVolume: null,
-        daysWaited: 0
-      };
-    })
-  };
-  await saveDB(SIGNALS, 'signal_' + date, data);
+  const ex = await getDB(SIGNALS, 'signal_' + date);
+  if (ex) return;
+  const buys = stocks.filter(s => s.score >= MIN_SCORE);
+  await saveDB(SIGNALS, 'signal_' + date, {
+    date,
+    stocks: buys.slice(0, 20).map(s => ({
+      sym: s.sym, signalClose: s.price,
+      entry: s.entry, sl: s.sl, t1: s.t1, t2: s.t2,
+      rr: s.rr, confirmAbove: s.confirmAbove,
+      requiredVolume: s.requiredVolume,
+      score: s.score, profitPct: s.profitPct,
+      status: 'pending', exitPrice: null, profit: 0, resultDate: null,
+      entryStatus: 'waiting', entryDate: null, entryPrice: null, entryVolume: null, daysWaited: 0
+    }))
+  });
 }
 
-function checkEntryConditions(sig, sigDate, newDays) {
+function checkEntryConditions(sig, newDays) {
   if (sig.entryStatus !== 'waiting' && sig.entryStatus !== 'weak') return false;
   let changed = false;
   for (const day of newDays) {
-    if (day.h >= sig.confirmAbove && day.v >= sig.requiredVolume) {
+    const volOk = !sig.requiredVolume || day.v >= sig.requiredVolume;
+    if (day.h >= sig.confirmAbove && volOk) {
+      const entryPrice = Math.max(sig.confirmAbove, day.o || sig.confirmAbove);
+      if (entryPrice >= sig.t1) {
+        sig.entryStatus = 'expired'; sig.status = 'expired';
+        changed = true; break;
+      }
       sig.entryStatus = 'hit';
       sig.entryDate = day.date;
-      sig.entryPrice = sig.confirmAbove;
+      sig.entryPrice = entryPrice;
       sig.entryVolume = day.v;
       sig.status = 'entered';
-      changed = true;
-      break;
+      changed = true; break;
     }
     sig.daysWaited = (sig.daysWaited || 0) + 1;
-    if (sig.entryStatus !== 'weak' && day.h >= sig.confirmAbove && day.v < sig.requiredVolume) {
+    if (sig.entryStatus !== 'weak' && day.h >= sig.confirmAbove && !volOk) {
       sig.entryStatus = 'weak';
       sig.entryDate = day.date;
-      sig.entryPrice = sig.confirmAbove;
+      sig.entryPrice = Math.max(sig.confirmAbove, day.o || sig.confirmAbove);
       sig.entryVolume = day.v;
       changed = true;
     }
-    if (sig.daysWaited >= ENTRY_VALID_DAYS) {
-      sig.entryStatus = 'expired';
-      sig.status = 'expired';
-      changed = true;
-      break;
+    if (sig.daysWaited >= ENTRY_VALID_DAYS && sig.entryStatus !== 'weak') {
+      sig.entryStatus = 'expired'; sig.status = 'expired';
+      changed = true; break;
     }
   }
   return changed;
@@ -496,99 +1006,148 @@ async function checkPreviousSignals(currentDate) {
     if (sigData.date >= currentDate) continue;
     let sigChanged = false;
     for (const sig of sigData.stocks) {
+      if (sig.entryStatus === undefined || sig.entryStatus === null) {
+        if (sig.status === 'target' || sig.status === 'sl') {
+          sig.entryStatus = 'legacy';
+        } else {
+          sig.entryStatus = 'waiting';
+          sig.daysWaited = 0;
+          if (sig.confirmAbove == null) sig.confirmAbove = sig.entry || sig.signalClose || 0;
+          if (sig.requiredVolume == null) sig.requiredVolume = 0;
+          if (!sig.sl && sig.entry) sig.sl = sig.entry * (1 - SL_PCT/100);
+          if (!sig.t1 && sig.entry) sig.t1 = sig.entry * 1.05;
+          sigChanged = true;
+        }
+      }
       const stock = stockData[sig.sym];
       if (!stock) {
-        if (sig.status === 'pending') { sig.status = 'expired'; sig.entryStatus = 'expired'; sigChanged = true; }
-        results.push(sig); continue;
+        if (sig.status === 'pending' || sig.status === 'entered') {
+          sig.status = 'expired'; sig.entryStatus = 'expired'; sigChanged = true;
+        }
+        results.push(sig);
+        continue;
       }
       const newDays = stock.filter(x => x.date > (sig.checkedUntil || sigData.date));
-
       if ((sig.entryStatus === 'waiting' || sig.entryStatus === 'weak') && newDays.length > 0) {
-        if (checkEntryConditions(sig, sigData.date, newDays)) sigChanged = true;
-        sig.checkedUntil = newDays[newDays.length - 1].date;
+        if (checkEntryConditions(sig, newDays)) sigChanged = true;
+        sig.checkedUntil = newDays[newDays.length-1].date;
       }
-
+      if (sig.entryStatus === 'waiting' || sig.entryStatus === 'weak') {
+        const daysSince = tradingDaysBetween(parseYYYYMMDD(sigData.date), parseYYYYMMDD(currentDate));
+        if (daysSince >= STALE_SIGNAL_DAYS) {
+          sig.entryStatus = 'expired'; sig.status = 'expired';
+          sigChanged = true;
+          results.push(sig);
+          continue;
+        }
+      }
       if (sig.entryStatus === 'hit' && sig.status === 'entered') {
         const entryDate = sig.entryDate;
         const actualEntry = sig.entryPrice || sig.entry;
-        const postEntryDays = stock.filter(x => x.date > entryDate);
-        for (const day of postEntryDays) {
-          if (day.l <= sig.sl) {
+        if (entryDate < stock[0].date) {
+          sig.status = 'expired'; sig.entryStatus = 'expired'; sig.profit = 0;
+          sigChanged = true;
+          results.push(sig);
+          continue;
+        }
+        const postDays = stock.filter(x => x.date >= entryDate);
+        for (const day of postDays) {
+          const hitSL = day.l <= sig.sl;
+          const hitT1 = day.h >= sig.t1;
+          if (hitSL && hitT1) {
+            if (day.o >= sig.t1) {
+              sig.status = 'target'; sig.exitPrice = sig.t1;
+              sig.profit = ((sig.t1 - actualEntry)/actualEntry)*100; sig.resultDate = day.date;
+            } else {
+              sig.status = 'sl'; sig.exitPrice = sig.sl;
+              sig.profit = ((sig.sl - actualEntry)/actualEntry)*100; sig.resultDate = day.date;
+            }
+            sigChanged = true; break;
+          }
+          if (hitSL) {
             sig.status = 'sl'; sig.exitPrice = sig.sl;
-            sig.profit = ((sig.sl - actualEntry) / actualEntry) * 100;
+            sig.profit = ((sig.sl - actualEntry)/actualEntry)*100;
             sig.resultDate = day.date; sigChanged = true; break;
           }
-          if (day.h >= sig.t1) {
+          if (hitT1) {
             sig.status = 'target'; sig.exitPrice = sig.t1;
-            sig.profit = ((sig.t1 - actualEntry) / actualEntry) * 100;
+            sig.profit = ((sig.t1 - actualEntry)/actualEntry)*100;
             sig.resultDate = day.date; sigChanged = true; break;
           }
         }
       }
-
-      if (sig.status !== 'pending' && sig.status !== 'entered' && !sig.entryStatus) {
-        sig.entryStatus = 'legacy';
-      }
-
       results.push(sig);
     }
     if (sigChanged) await saveDB(SIGNALS, 'signal_' + sigData.date, sigData);
   }
-  if (results.length === 0) { renderEntryTracker([]); return; }
+  if (!results.length) {
+    renderEntryTracker([]);
+    document.getElementById('trackingResult').innerHTML = '';
+    const trackWrap = document.getElementById('trackingWrap');
+    if (trackWrap) trackWrap.classList.add('hidden');
+    const trackBadge = document.getElementById('trackingBadge');
+    if (trackBadge) trackBadge.textContent = '—';
+    return;
+  }
   renderEntryTracker(results);
   const wins = results.filter(r => r.status === 'target').length;
   const losses = results.filter(r => r.status === 'sl').length;
   const pending = results.filter(r => r.status === 'pending' || r.status === 'entered').length;
   const expired = results.filter(r => r.status === 'expired').length;
   const total = wins + losses;
-  const winRate = total > 0 ? (wins / total * 100).toFixed(1) : 0;
-  const totalProfit = results.reduce((sum, r) => sum + (r.profit || 0), 0);
-  renderTracking({ results, stats: { total: results.length, wins, losses, pending, expired, winRate, totalProfit: totalProfit.toFixed(2) } });
+  const wr = total > 0 ? (wins / total * 100).toFixed(1) : '0.0';
+  const tp = results.reduce((s, r) => s + (r.profit || 0), 0);
+  renderTracking({
+    results,
+    stats: {
+      total: results.length, wins, losses, pending, expired,
+      winRate: wr, totalProfit: tp.toFixed(2)
+    }
+  });
 }
 
 function renderEntryTracker(results) {
   const el = document.getElementById('entryTracker');
-  const entrySigs = results.filter(r => r.entryStatus && r.entryStatus !== 'legacy');
-  if (entrySigs.length === 0) { el.innerHTML = ''; return; }
+  const wrap = document.getElementById('entryTrackerWrap');
+  const badge = document.getElementById('entryTrackerBadge');
+  
+  const sigs = results.filter(r => r.entryStatus && r.entryStatus !== 'legacy');
+  if (!sigs.length) { 
+    el.innerHTML = ''; 
+    if (wrap) wrap.classList.add('hidden');
+    if (badge) badge.textContent = '0';
+    return; 
+  }
+  if (wrap) wrap.classList.remove('hidden');
+  if (badge) badge.textContent = sigs.length;
 
-  const hit = entrySigs.filter(r => r.entryStatus === 'hit').length;
-  const weak = entrySigs.filter(r => r.entryStatus === 'weak').length;
-  const waiting = entrySigs.filter(r => r.entryStatus === 'waiting').length;
-  const expired = entrySigs.filter(r => r.entryStatus === 'expired').length;
+  const hit = sigs.filter(r => r.entryStatus === 'hit').length;
+  const weak = sigs.filter(r => r.entryStatus === 'weak').length;
+  const wait = sigs.filter(r => r.entryStatus === 'waiting').length;
+  const exp = sigs.filter(r => r.entryStatus === 'expired').length;
 
-  let h = `<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:14px;margin-bottom:14px;">
-    <h2 style="color:#e65100;font-size:16px;margin-bottom:10px;">🎯 Entry Tracker (Live)</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div style="background:#e8f5e9;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${hit}</div><div style="font-size:10px;color:#2e7d32;">🟢 ENTRY HIT</div></div>
-      <div style="background:#fffde7;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#f57c00;">${weak}</div><div style="font-size:10px;color:#f57c00;">🟡 WEAK (Vol ઓછું)</div></div>
-      <div style="background:#e3f2fd;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#1565c0;">${waiting}</div><div style="font-size:10px;color:#1565c0;">⏳ WAITING</div></div>
-      <div style="background:#f5f5f5;padding:8px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#757575;">${expired}</div><div style="font-size:10px;color:#757575;">⌛ EXPIRED</div></div>
+  let h = `<div style="background:linear-gradient(135deg,#fff3e0 0%,#ffe0b2 100%);border:2px solid #ff9800;border-radius:14px;padding:16px 14px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:#e8f5e9;padding:12px 8px;border-radius:10px;text-align:center;border:1px solid #a5d6a7;"><div style="font-size:24px;font-weight:800;color:#2e7d32;">${hit}</div><div style="font-size:12px;color:#2e7d32;margin-top:4px;font-weight:700;">🟢 HIT</div></div>
+      <div style="background:#fffde7;padding:12px 8px;border-radius:10px;text-align:center;border:1px solid #fff176;"><div style="font-size:24px;font-weight:800;color:#f57c00;">${weak}</div><div style="font-size:12px;color:#f57c00;margin-top:4px;font-weight:700;">🟡 WEAK</div></div>
+      <div style="background:#e3f2fd;padding:12px 8px;border-radius:10px;text-align:center;border:1px solid #90caf9;"><div style="font-size:24px;font-weight:800;color:#1565c0;">${wait}</div><div style="font-size:12px;color:#1565c0;margin-top:4px;font-weight:700;">⏳ WAIT</div></div>
+      <div style="background:#f5f5f5;padding:12px 8px;border-radius:10px;text-align:center;border:1px solid #e0e0e0;"><div style="font-size:24px;font-weight:800;color:#616161;">${exp}</div><div style="font-size:12px;color:#616161;margin-top:4px;font-weight:700;">⌛ EXP</div></div>
     </div>`;
 
-  const sorted = [...entrySigs].sort((a, b) => (b.entryDate || '').localeCompare(a.entryDate || ''));
-
+  const sorted = [...sigs].sort((a, b) => String(b.entryDate || '').localeCompare(String(a.entryDate || '')));
   sorted.slice(0, 30).forEach(sig => {
-    let cardClass = 'pending';
-    let statusIcon = '⏳';
-    let statusText = 'WAITING';
-    let statusColor = '#1565c0';
-
-    if (sig.entryStatus === 'hit') { cardClass = 'entryhit'; statusIcon = '🟢'; statusText = 'ENTRY HIT — BUY'; statusColor = '#2e7d32'; }
-    else if (sig.entryStatus === 'weak') { cardClass = 'weak'; statusIcon = '🟡'; statusText = 'WEAK — Volume ઓછું'; statusColor = '#f57c00'; }
-    else if (sig.entryStatus === 'expired') { cardClass = 'noentry'; statusIcon = '⌛'; statusText = 'EXPIRED — 5 દિવસ પૂરા'; statusColor = '#757575'; }
-    else { cardClass = 'pending'; statusIcon = '⏳'; statusText = 'WAITING — ' + (ENTRY_VALID_DAYS - (sig.daysWaited || 0)) + ' દિવસ બાકી'; statusColor = '#1565c0'; }
-
-    const entryDateFmt = sig.entryDate ? (sig.entryDate.slice(6,8) + '-' + sig.entryDate.slice(4,6) + '-' + sig.entryDate.slice(0,4)) : '—';
-
-    h += `<div class="track-card ${cardClass}">
-      <div class="track-row">
-        <div class="track-sym">${statusIcon} ${sig.sym}</div>
-        <div style="font-size:12px;font-weight:bold;color:${statusColor};">${statusText}</div>
-      </div>
-      <div class="track-detail">🎯 Confirm Above: ₹${(sig.confirmAbove ?? 0).toFixed(2)} | 📊 Required Vol: ${Math.round(sig.requiredVolume ?? 0).toLocaleString('en-IN')}</div>
-      ${sig.entryDate ? `<div class="track-detail">📅 Entry Date: ${entryDateFmt} | 💰 Entry Price: ₹${(sig.entryPrice ?? 0).toFixed(2)} | 📊 Entry Vol: ${Math.round(sig.entryVolume || 0).toLocaleString('en-IN')}</div>` : ''}
-      ${sig.status === 'target' ? `<div class="track-detail" style="color:#2e7d32;font-weight:bold;">✅ TARGET HIT — નફો +${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
-      ${sig.status === 'sl' ? `<div class="track-detail" style="color:#c62828;font-weight:bold;">❌ SL HIT — ખોટ ${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
+    let cc = 'pending', ic = '⏳', st = 'WAITING', sc = '#1565c0';
+    if (sig.entryStatus === 'hit') { cc = 'entryhit'; ic = '🟢'; st = 'ENTRY HIT'; sc = '#2e7d32'; }
+    else if (sig.entryStatus === 'weak') { cc = 'weak'; ic = '🟡'; st = 'WEAK'; sc = '#f57c00'; }
+    else if (sig.entryStatus === 'expired') { cc = 'noentry'; ic = '⌛'; st = 'EXPIRED'; sc = '#616161'; }
+    else { st = (ENTRY_VALID_DAYS - (sig.daysWaited || 0)) + ' દિ બાકી'; }
+    const edF = sig.entryDate ? fmtDateFull(sig.entryDate) : '—';
+    h += `<div class="track-card ${cc}">
+      <div class="track-row"><div class="track-sym">${ic} ${sig.sym}</div><div style="font-size:13px;font-weight:800;color:${sc};">${st}</div></div>
+      <div class="track-detail">🎯 ₹${(sig.confirmAbove ?? 0).toFixed(2)} | Vol: ${Math.round(sig.requiredVolume ?? 0).toLocaleString('en-IN')}</div>
+      ${sig.entryDate ? `<div class="track-detail">📅 ${edF} | 💰 ₹${(sig.entryPrice ?? 0).toFixed(2)}</div>` : ''}
+      ${sig.status === 'target' ? `<div class="track-detail" style="color:#2e7d32;font-weight:800;">✅ +${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
+      ${sig.status === 'sl' ? `<div class="track-detail" style="color:#c62828;font-weight:800;">❌ ${(sig.profit ?? 0).toFixed(2)}%</div>` : ''}
     </div>`;
   });
   h += `</div>`;
@@ -597,69 +1156,85 @@ function renderEntryTracker(results) {
 
 function renderTracking(data) {
   const el = document.getElementById('trackingResult');
+  const wrap = document.getElementById('trackingWrap');
+  const badge = document.getElementById('trackingBadge');
   const s = data.stats;
-  let h = `<div style="background:#e8f5e9;border:2px solid #43a047;border-radius:10px;padding:14px;margin-bottom:14px;">
-    <h2 style="color:#1b5e20;font-size:16px;margin-bottom:10px;">📊 Signal Performance</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${s.wins}</div><div style="font-size:11px;color:#558b2f;">✅ Target</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#c62828;">${s.losses}</div><div style="font-size:11px;color:#558b2f;">❌ SL</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#f57c00;">${s.pending}</div><div style="font-size:11px;color:#558b2f;">⏳ Active</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:bold;color:#757575;">${s.expired}</div><div style="font-size:11px;color:#558b2f;">⌛ Expired</div></div>
-      <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;grid-column:span 2;"><div style="font-size:20px;font-weight:bold;color:#2e7d32;">${s.winRate}%</div><div style="font-size:11px;color:#558b2f;">🎯 Win Rate</div></div>
+  
+  if (badge) badge.textContent = s.winRate + '%';
+  if (wrap) wrap.classList.remove('hidden');
+  
+  el.innerHTML = `<div style="background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%);border:2px solid #43a047;border-radius:14px;padding:16px 14px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:#fff;padding:12px 8px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#2e7d32;">${s.wins}</div><div style="font-size:12px;color:#2e7d32;margin-top:4px;font-weight:700;">✅ Target</div></div>
+      <div style="background:#fff;padding:12px 8px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#c62828;">${s.losses}</div><div style="font-size:12px;color:#c62828;margin-top:4px;font-weight:700;">❌ SL</div></div>
+      <div style="background:#fff;padding:12px 8px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#f57c00;">${s.pending}</div><div style="font-size:12px;color:#f57c00;margin-top:4px;font-weight:700;">⏳ Active</div></div>
+      <div style="background:#fff;padding:12px 8px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#616161;">${s.expired}</div><div style="font-size:12px;color:#616161;margin-top:4px;font-weight:700;">⌛ Expired</div></div>
+      <div style="background:#fff;padding:14px 8px;border-radius:10px;text-align:center;grid-column:span 2;"><div style="font-size:24px;font-weight:800;color:#1b5e20;">${s.winRate}%</div><div style="font-size:12px;color:#2e7d32;margin-top:4px;font-weight:700;">🎯 Win Rate</div></div>
     </div>
-    <div style="background:#fff;padding:10px;border-radius:8px;text-align:center;">
-      <div style="font-size:22px;font-weight:bold;color:${parseFloat(s.totalProfit) >= 0 ? '#2e7d32' : '#c62828'};">${parseFloat(s.totalProfit) >= 0 ? '+' : ''}${s.totalProfit}%</div>
-      <div style="font-size:11px;color:#558b2f;">💰 કુલ નફો</div>
+    <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;">
+      <div style="font-size:26px;font-weight:800;color:${parseFloat(s.totalProfit) >= 0 ? '#2e7d32' : '#c62828'};">${parseFloat(s.totalProfit) >= 0 ? '+' : ''}${s.totalProfit}%</div>
+      <div style="font-size:12px;color:#2e7d32;margin-top:6px;font-weight:700;">💰 કુલ નફો</div>
     </div>
   </div>`;
-  el.innerHTML = h;
 }
 
 async function updateStatus() {
   const m = await getDB(META, 'info') || {};
   const el = document.getElementById('dataStatus');
   if (m.days) {
-    let txt = `📊 <b>${m.days} દિવસ</b> | <b>${m.stocks} શેર</b>`;
-    if (m.dateRange && m.dateRange !== '-') txt += `<br><small>${m.dateRange}</small>`;
-    if (m.removed > 0) txt += `<br><small style="color:#c62828;">🗑️ ${m.removed} જૂનો દિવસ ડિલીટ</small>`;
-    if (m.days < MIN_DAYS_MACD) txt += `<br><small style="color:#e65100;">⚠️ MACD માટે ${MIN_DAYS_MACD}+ દિવસ</small>`;
-    const missing = getMissingDates(m.dates || []);
-    if (missing.length > 0) {
-      txt += `<br><small style="color:#c62828;">🚫 ${missing.length} તારીખ(ો) ની ફાઈલ upload નથી: ${missing.map(fmtDateShort).join(', ')}</small>`;
-    }
-    el.innerHTML = txt;
-  } else { el.innerHTML = '📊 હાલ કોઈ ડેટા નથી'; }
+    let t = `📊 <b>${m.days} દિવસ</b> | <b>${m.stocks} શેર</b>`;
+    if (m.dateRange && m.dateRange !== '-') t += `<br>${m.dateRange}`;
+    if (m.removed > 0) t += `<br><span style="color:#c62828;">🗑️ ${m.removed} જૂનો દિવસ ડિલીટ</span>`;
+    if (m.days < MIN_DAYS_MACD) t += `<br><span style="color:#e65100;">⚠️ MACD માટે ${MIN_DAYS_MACD}+ દિવસ</span>`;
+    const miss = getMissingDates(m.dates || []);
+    if (miss.length) t += `<br><span style="color:#c62828;">🚫 ${miss.length} તારીખ બાકી: ${miss.slice(0, 8).map(fmtDateShort).join(', ')}${miss.length > 8 ? '...' : ''}</span>`;
+    el.innerHTML = t;
+  } else {
+    el.innerHTML = '📊 હાલ કોઈ ડેટા નથી';
+  }
 }
 
 async function refreshReminder() {
   const m = await getDB(META, 'info') || {};
+  const idxData = await getDB(META, 'indexConstituents') || {};
   const el = document.getElementById('reminderBanner');
   const today = new Date();
   const day = today.getDay();
-  const hour = today.getHours();
-  const todayStr = todayIsoLocal().replace(/-/g, '');
+  const todayStr = isoCompact(today);
+  const nowMin = today.getHours() * 60 + today.getMinutes();
+  const mktClose = 15 * 60 + 30, bhavReady = 18 * 60;
+
   let html = '';
+
+  if (idxData && idxData.loadedAt) {
+    const idxDays = Math.floor((Date.now() - new Date(idxData.loadedAt).getTime()) / 86400000);
+    if (idxDays >= INDEX_REFRESH_DAYS) {
+      html += `<div class="reminder warn">🔴 Index list ${idxDays} દિવસ જૂની — NIFTY 200/500 CSV ફરી download કરો.</div>`;
+    } else if (idxDays >= 20) {
+      html += `<div class="reminder info">⚠️ Index list ${idxDays} દિવસ જૂની — ટૂંકમાં refresh કરવી સારી.</div>`;
+    }
+  }
+
   if (day === 0 || day === 6) {
-    html = `<div class="reminder info">🎉 આજે Weekend છે — Market બંધ</div>`;
-  } else if (NSE_HOLIDAYS_2026.has(todayStr)) {
-    html = `<div class="reminder info">🎉 આજે જાહેર રજા છે — Market બંધ</div>`;
-  } else if (hour < 16) {
-    html = `<div class="reminder info">⏰ Market ચાલુ છે — 3:30 PM પછી BhavCopy upload કરો</div>`;
+    if (!m.dateRange || m.dateRange === '-') html += `<div class="reminder info">🎉 Weekend — Market બંધ. પણ ડેટા નથી, upload કરો.</div>`;
+    else html += `<div class="reminder info">🎉 આજે Weekend છે — Market બંધ</div>`;
+  } else if (NSE_HOLIDAYS.has(todayStr)) {
+    html += `<div class="reminder info">🎉 આજે રજા છે — Market બંધ</div>`;
+  } else if (nowMin < mktClose) {
+    html += `<div class="reminder info">⏰ Market ચાલુ — બંધ થયા પછી upload કરો</div>`;
+  } else if (nowMin < bhavReady) {
+    html += `<div class="reminder info">⏳ BhavCopy ~6 PM પછી ઉપલબ્ધ</div>`;
   } else if (!m.dateRange || m.dateRange === '-') {
-    html = `<div class="reminder warn">⚠️ કોઈ ડેટા નથી — BhavCopy ZIP upload કરો!</div>`;
+    html += `<div class="reminder warn">⚠️ કોઈ ડેટા નથી — ZIP upload કરો!</div>`;
   } else {
     const lastDate = m.dateRange.split(' → ')[1];
     if (lastDate === todayStr) {
-      html = `<div class="reminder" style="background:#e8f5e9;border:1px solid #66bb6a;color:#2e7d32;">✅ આજનો ડેટા upload થઈ ગયો — તાજો છે!</div>`;
+      html += `<div class="reminder" style="background:#e8f5e9;border:2px solid #66bb6a;color:#1b5e20;font-weight:700;">✅ આજનો ડેટા તાજો છે!</div>`;
     } else {
-      const lastD = new Date(lastDate.slice(0,4), lastDate.slice(4,6)-1, lastDate.slice(6,8));
-      // Count only trading days missed (skips weekends & NSE holidays), not raw calendar days
-      const tradingGap = tradingDaysBetween(lastD, today) + 1;
-      if (tradingGap >= 3) {
-        html = `<div class="reminder warn">🔴 ${tradingGap} ટ્રેડિંગ દિવસ જૂનો ડેટા — તાત્કાલિક upload કરો!</div>`;
-      } else {
-        html = `<div class="reminder info">⚠️ આજની BhavCopy upload બાકી — છેલ્લો ડેટા ${tradingGap} ટ્રેડિંગ દિવસ જૂનો</div>`;
-      }
+      const lastD = parseYYYYMMDD(lastDate);
+      const gap = tradingDaysBetween(lastD, today) + 1;
+      if (gap >= 3) html += `<div class="reminder warn">🔴 ${gap} દિવસ જૂનો — upload કરો!</div>`;
+      else html += `<div class="reminder info">⚠️ આજની BhavCopy બાકી — ${gap} દિવસ જૂનો</div>`;
     }
   }
   el.innerHTML = html;
@@ -670,27 +1245,37 @@ async function loadFromDB() {
   res.innerHTML = '<div class="load"><div class="spin"></div>લોડ થાય છે...</div>';
   try {
     const data = await getDB(STORE, 'all');
-    if (!data || Object.keys(data).length === 0) { res.innerHTML = '<div class="empty">📭 કોઈ ડેટા નથી.</div>'; return; }
+    if (!data || !Object.keys(data).length) {
+      res.innerHTML = '<div class="empty">📭 કોઈ ડેટા નથી.</div>';
+      return;
+    }
     stockData = data;
     const m = await getDB(META, 'info') || {};
     dataGap = m.gap || 0;
     document.getElementById('totalDays').textContent = m.days || '?';
-    updateStatus();
+    await updateStatus();
     analyze();
     const allSigs = await getAllDB(SIGNALS);
-    if (allSigs.length > 0) {
+    if (allSigs.length) {
       const latestDataDate = (m.dateRange && m.dateRange !== '-') ? m.dateRange.split(' → ')[1] : '';
       const latestSigDate = allSigs.reduce((mx, s) => (s && s.date && s.date > mx) ? s.date : mx, '');
       const checkDate = (latestDataDate > latestSigDate ? latestDataDate : latestSigDate) || '99999999';
       await checkPreviousSignals(checkDate);
     }
-  } catch (err) { res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>'; }
+  } catch (err) {
+    res.innerHTML = '<div class="empty">❌ ભૂલ: ' + err.message + '</div>';
+  }
 }
 
 async function deleteDB() {
-  if (!confirm('બધો ડેટા ડિલીટ કરવો?')) return;
+  if (!confirm('બધો ડેટા ડિલીટ કરવો? (Index list પણ જશે)')) return;
   await clearDB();
-  stockData = {}; allStocks = [];
+  stockData = {};
+  allStocks = [];
+  dataGap = 0;
+  searchTerm = '';
+  currentFilter = 'all';
+  fundamentalFilter = { mode: 'off', symbols: [], symbolSet: new Set() };
   document.getElementById('totalDays').textContent = '0';
   document.getElementById('totalStocks').textContent = '0';
   document.getElementById('buySignals').textContent = '0';
@@ -698,88 +1283,59 @@ async function deleteDB() {
   document.getElementById('results').innerHTML = '<div class="empty">🗑️ ડેટા ડિલીટ થયો</div>';
   document.getElementById('trackingResult').innerHTML = '';
   document.getElementById('entryTracker').innerHTML = '';
-  updateStatus();
+  document.getElementById('trackingWrap').classList.add('hidden');
+  document.getElementById('entryTrackerWrap').classList.add('hidden');
+  document.getElementById('searchBox').value = '';
+  filterStocks('all');
+  updateFundToggle();
+  updateStockFilterStatus();
+  await updateStatus();
   await refreshReminder();
 }
 
 function getLatestDate() {
-  let latestDate = '';
+  let ld = '';
   for (const sym in stockData) {
     const d = stockData[sym];
-    if (d.length > 0) { const lastDate = d[d.length - 1].date; if (lastDate > latestDate) latestDate = lastDate; }
+    if (d.length > 0) {
+      const l = d[d.length-1].date;
+      if (l > ld) ld = l;
+    }
   }
-  let formattedDate = latestDate;
-  if (latestDate && latestDate.length === 8) {
-    formattedDate = latestDate.slice(6, 8) + '-' + latestDate.slice(4, 6) + '-' + latestDate.slice(0, 4);
-  }
-  return { raw: latestDate, formatted: formattedDate };
+  let f = ld;
+  if (ld && ld.length === 8) f = fmtDateFull(ld);
+  return { raw: ld, formatted: f };
 }
 
 function exportExcel() {
-  if (allStocks.length === 0) { alert('પહેલા ડેટા લોડ કરો'); return; }
-  const dateInfo = getLatestDate();
+  if (!allStocks.length) { alert('પહેલા ડેટા લોડ કરો'); return; }
+  const di = getLatestDate();
   let filtered = allStocks;
   if (currentFilter === 'buy') filtered = allStocks.filter(s => s.score >= MIN_SCORE);
   else if (currentFilter === 'strong') filtered = allStocks.filter(s => s.score >= STRONG_SCORE);
   if (searchTerm) filtered = filtered.filter(s => s.sym.includes(searchTerm));
-  if (filtered.length === 0) { alert('આ ફિલ્ટર/શોધમાં કોઈ શેર નથી — Export માટે કંઈ નથી'); return; }
-
-  const headers = [
-    'Date', 'Rank', 'Symbol', 'Score',
-    'Price', 'Entry', 'ConfirmAbove', 'SL', 'Target1', 'Target2',
-    'Profit%', 'R:R', 'RSI', 'Close%', 'Change%', 'Streak',
-    'ActualVol', 'AvgVol', 'RequiredVol_1.5x', 'VolRatio', 'VolOK',
-    'MACD_Hist', 'MACD_Line', 'Signal_Line', 'MACD_Bullish',
-    'Breakout', 'BreakoutAge',
-    'SupportEntry', 'SupportSL', 'SupportProfit%'
-  ];
-
+  if (!filtered.length) { alert('કોઈ શેર નથી'); return; }
+  const headers = ['Date','Rank','Symbol','Score','Close','Entry','ConfirmAbove','SL','Target1','Target2','Profit%','R:R','RSI','Close%','Change%','Streak','ActualVol','AvgVol','RequiredVol_1.5x','VolRatio','VolOK','MACD_Hist','MACD_Line','Signal_Line','MACD_Bullish','Breakout','BreakoutAge','SupportEntry','SupportSL','SupportT1','SupportProfit%'];
   let csv = headers.join(',') + '\n';
-
-  filtered.slice(0, 50).forEach((s, i) => {
-    const breakoutAgeTxt = s.brk
-      ? (s.breakoutAge === 0 ? 'Today' : (s.breakoutAge === 1 ? 'Yesterday' : 'Older'))
-      : 'No';
-    const row = [
-      dateInfo.formatted,
-      i + 1,
-      s.sym,
-      s.score,
-      s.price.toFixed(2),
-      s.entry.toFixed(2),
-      s.confirmAbove.toFixed(2),
-      s.sl.toFixed(2),
-      s.t1.toFixed(2),
-      s.t2.toFixed(2),
-      s.profitPct.toFixed(2),
-      s.rr.toFixed(2),
-      s.rsi.toFixed(0),
-      s.closePos.toFixed(0),
-      s.chg !== null ? s.chg.toFixed(2) : '',
-      s.streak,
-      Math.round(s.volume),
-      Math.round(s.avgVolume),
-      Math.round(s.requiredVolume),
-      s.vR.toFixed(2),
-      s.confirmVolOk ? 'YES' : 'NO',
-      s.histogram.toFixed(2),
-      s.macdLine.toFixed(2),
-      s.signalLine.toFixed(2),
-      s.macdBullish ? 'YES' : 'NO',
-      s.brk ? 'YES' : 'NO',
-      breakoutAgeTxt,
-      s.supportEntry.toFixed(2),
-      s.supportSL.toFixed(2),
-      s.supportProfitPct.toFixed(2)
-    ];
-    csv += row.join(',') + '\n';
+  filtered.forEach((s, i) => {
+    const ba = s.brk ? (s.breakoutAge === 0 ? 'Today' : (s.breakoutAge === 1 ? 'Yesterday' : 'Older')) : 'No';
+    csv += [
+      di.formatted, i+1, s.sym, s.score, s.price.toFixed(2), s.entry.toFixed(2),
+      s.confirmAbove.toFixed(2), s.sl.toFixed(2), s.t1.toFixed(2), s.t2.toFixed(2),
+      s.profitPct.toFixed(2), s.rr.toFixed(2), s.rsi.toFixed(0), s.closePos.toFixed(0),
+      s.chg !== null ? s.chg.toFixed(2) : '', s.streak,
+      Math.round(s.volume), Math.round(s.avgVolume), Math.round(s.requiredVolume),
+      s.vR.toFixed(2), s.confirmVolOk ? 'YES' : 'NO',
+      s.histogram.toFixed(2), s.macdLine.toFixed(2), s.signalLine.toFixed(2),
+      s.macdBullish ? 'YES' : 'NO', s.brk ? 'YES' : 'NO', ba,
+      s.supportEntry.toFixed(2), s.supportSL.toFixed(2),
+      s.supportT1.toFixed(2), s.supportProfitPct.toFixed(2)
+    ].join(',') + '\n';
   });
-
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', 'NSE_Signals_' + dateInfo.raw + '.csv');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'NSE_Signals_' + di.raw + '.csv';
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
@@ -787,52 +1343,35 @@ function exportExcel() {
 }
 
 function exportPortfolio() {
-  if (allStocks.length === 0) { alert('પહેલા ડેટા લોડ કરો'); return; }
+  if (!allStocks.length) { alert('પહેલા ડેટા લોડ કરો'); return; }
   let list = allStocks.filter(s => s.score >= STRONG_SCORE);
-  if (list.length === 0) list = allStocks.slice(0, 10);
-  const dateInfo = getLatestDate();
+  let fb = false;
+  if (!list.length) { list = allStocks.slice(0, 10); fb = true; }
+  const di = getLatestDate();
   const today = new Date();
-  let dateStr = '';
-  if (dateInfo.raw && dateInfo.raw.length === 8) {
-    dateStr = dateInfo.raw.slice(6, 8) + '-' + dateInfo.raw.slice(4, 6) + '-' + dateInfo.raw.slice(0, 4);
-  } else {
-    dateStr = String(today.getDate()).padStart(2, '0') + '-' +
-              String(today.getMonth() + 1).padStart(2, '0') + '-' +
-              today.getFullYear();
-  }
-  const gmtDate = dateStr + ' GMT+0530';
-  const timeStr = String(today.getHours()).padStart(2, '0') + ':' +
-                  String(today.getMinutes()).padStart(2, '0') + ':' +
-                  String(today.getSeconds()).padStart(2, '0');
-  const headers = [
-    'Id', 'Symbol', 'Name', 'Display Symbol', 'Exchange', 'Portfolio', 'Currency',
-    'Shares Owned', 'Cost Per Share', 'Commission', 'Transaction Date', 'Transaction Time',
-    'Purchase Exchange Rate', 'Purchase Exchange Currencies', 'Type', 'Accounting',
-    'Accounting Execution Ids', 'Notes', 'OutgoingCashLink'
-  ];
-  let csv = headers.join(',') + '\n';
+  const ds = (di.raw && di.raw.length === 8) ? fmtDateFull(di.raw) : `${pad2(today.getDate())}-${pad2(today.getMonth()+1)}-${today.getFullYear()}`;
+  const gd = ds + ' GMT+0530';
+  const ts = pad2(today.getHours()) + ':' + pad2(today.getMinutes()) + ':' + pad2(today.getSeconds());
+  const H = ['Id','Symbol','Name','Display Symbol','Exchange','Portfolio','Currency','Shares Owned','Cost Per Share','Commission','Transaction Date','Transaction Time','Purchase Exchange Rate','Purchase Exchange Currencies','Type','Accounting','Accounting Execution Ids','Notes','OutgoingCashLink'];
+  let csv = H.join(',') + '\n';
   let id = 1;
   list.forEach(s => {
-    const symbolNS = s.sym + '.NS';
-    const companyName = s.sym;
-    csv += `"${id}","${symbolNS}","${companyName}","","NSI","${dateStr}","INR","","","","","","","","","","","",""\n`;
+    const ns = s.sym + '.NS';
+    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","","","","","","","","","","","",""\n`;
     id++;
-    csv += `"${id}","${symbolNS}","${companyName}","","NSI","${dateStr}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gmtDate}","${timeStr}","","","Buy","","","",""\n`;
+    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gd}","${ts}","","","Buy","","","",""\n`;
     id++;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  const dlDate = String(today.getFullYear()) + '-' +
-                 String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                 String(today.getDate()).padStart(2, '0');
-  link.setAttribute('href', url);
-  link.setAttribute('download', 'MSP-Portfolios-' + dlDate + '.csv');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'MSP-Portfolios-' + today.getFullYear() + '-' + pad2(today.getMonth()+1) + '-' + pad2(today.getDate()) + '.csv';
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  alert('✅ ' + list.length + ' શેર Portfolio CSV માં export થયા!');
+  alert((fb ? '⚠️ Strong Buy કોઈ નથી — Top 10 by score.\n\n' : '✅ ' + list.length + ' Strong Buy શેર!\n\n') +
+    '📊 કુલ: ' + list.length + '\n⚠️ Entry = Confirm Above ભાવ.');
 }
 
 function analyze() {
@@ -840,6 +1379,7 @@ function analyze() {
   for (const sym in stockData) {
     const d = stockData[sym];
     if (d.length < MIN_DAYS) continue;
+    if (fundamentalFilter.mode === 'whitelist' && !fundamentalFilter.symbolSet.has(sym)) continue;
     const r = calc(sym, d);
     if (!r) continue;
     if (!(r.brk && r.freshBreakout && r.rsi >= RSI_MIN && r.rsi <= RSI_MAX && r.rr >= MIN_RR)) continue;
@@ -858,189 +1398,232 @@ function analyze() {
 function calc(sym, d) {
   const cl = d.map(x => x.c);
   const vo = d.map(x => x.v);
-  const last = d[d.length - 1];
+  const last = d[d.length-1];
   const price = last.c;
+
   const e9 = ema(cl, 9);
   const e21 = ema(cl, 21);
   const e50 = cl.length >= 50 ? ema(cl, 50) : null;
   const ma20 = cl.length >= 20 ? cl.slice(-20).reduce((a,b) => a+b, 0) / 20 : null;
   const rsi = calcRSI(cl, 14);
 
-  let macdLine = 0, signalLine = 0, histogram = 0, macdBullish = false, macdDataOk = false;
+  let macdLine = 0, signalLine = 0, histogram = 0, macdBullish = false, macdOk = false;
   if (cl.length >= 26) {
-    const macdValues = [];
+    const mv = [];
     for (let i = 26; i <= cl.length; i++) {
-      const slice = cl.slice(0, i);
-      const e12 = ema(slice, 12);
-      const e26 = ema(slice, 26);
-      if (e12 !== null && e26 !== null) macdValues.push(e12 - e26);
+      const sl = cl.slice(0, i);
+      const e12 = ema(sl, 12);
+      const e26 = ema(sl, 26);
+      if (e12 !== null && e26 !== null) mv.push(e12 - e26);
     }
-    if (macdValues.length > 0) macdLine = macdValues[macdValues.length - 1];
-    if (macdValues.length >= 9) { signalLine = ema(macdValues, 9); if (signalLine === null) signalLine = macdLine; macdDataOk = true; }
-    else signalLine = macdLine;
+    if (mv.length) macdLine = mv[mv.length-1];
+    if (mv.length >= 9) {
+      signalLine = ema(mv, 9);
+      if (signalLine === null) signalLine = macdLine;
+      macdOk = true;
+    } else {
+      signalLine = macdLine;
+    }
     histogram = macdLine - signalLine;
     macdBullish = macdLine > signalLine && histogram > 0;
   }
 
-  let avgV, high20val;
+  let avgV, h20;
   if (d.length >= 21) {
-    const prev20 = d.slice(-21, -1);
-    avgV = prev20.reduce((a, b) => a + b.v, 0) / 20;
-    high20val = Math.max(...prev20.map(x => x.h));
+    const p = d.slice(-21, -1);
+    avgV = p.reduce((a,b) => a + b.v, 0) / 20;
+    h20 = Math.max(...p.map(x => x.h));
+  } else if (d.length >= 2) {
+    const p = d.slice(0, -1);
+    avgV = p.reduce((a,b) => a + b.v, 0) / p.length;
+    h20 = Math.max(...p.map(x => x.h));
   } else {
-    avgV = vo.reduce((a, b) => a + b, 0) / vo.length;
-    high20val = Math.max(...d.map(x => x.h));
+    avgV = vo[0] || 0;
+    h20 = last.h;
   }
   const vR = avgV > 0 ? last.v / avgV : 0;
-  const brk = price > high20val;
+  const brk = price > h20;
   const atr = calcATR(d, 14);
 
-  let freshBreakout = false;
-  let breakoutAge = null;
+  let fb = false, ba = null;
   if (brk) {
     if (d.length >= 23) {
-      breakoutAge = -1;
-      for (let back = 0; back <= 2; back++) {
-        const idx = d.length - 1 - back;
-        const win = d.slice(idx - 20, idx);
-        const priorHigh = Math.max(...win.map(x => x.h));
-        if (d[idx].c > priorHigh) { breakoutAge = back; break; }
+      ba = -1;
+      for (let b = 0; b <= 2; b++) {
+        const idx = d.length - 1 - b;
+        const w = d.slice(Math.max(0, idx - 20), idx);
+        if (!w.length) continue;
+        if (d[idx].c > Math.max(...w.map(x => x.h))) { ba = b; break; }
       }
-      freshBreakout = breakoutAge !== -1 && breakoutAge <= 1;
+      fb = ba !== -1 && ba <= 1;
     } else {
-      freshBreakout = true;
-      breakoutAge = 0;
+      fb = true;
+      ba = 0;
     }
   }
 
   let score = 0;
   const sig = [];
 
-  if (e9 !== null && e21 !== null && e9 > e21) { score += 20; sig.push({ ok: 1, t: '✅ EMA9 > EMA21' }); }
-  else sig.push({ ok: 0, t: '❌ EMA9 < EMA21' });
+  if (e9 !== null && e21 !== null && e9 > e21) {
+    score += 20; sig.push({ ok: 1, t: '✅ EMA9>21' });
+  } else sig.push({ ok: 0, t: '❌ EMA9<21' });
 
-  if (e50 !== null && price > e50) { score += 15; sig.push({ ok: 1, t: '✅ 50 EMA ઉપર' }); }
-  else if (e50 !== null) sig.push({ ok: 0, t: '❌ 50 EMA નીચે' });
-  else sig.push({ ok: 0, t: '⚠️ 50 DMA ઓછો' });
+  if (e50 !== null && price > e50) {
+    score += 15; sig.push({ ok: 1, t: '✅ 50EMA+' });
+  } else if (e50 !== null) {
+    sig.push({ ok: 0, t: '❌ 50EMA-' });
+  } else {
+    score -= 10; sig.push({ ok: 0, t: '⚠️ 50EMA ડેટા અધૂરો (-10)', warn: 1 });
+  }
 
-  if (rsi >= 40 && rsi <= 65) { score += 12; sig.push({ ok: 1, t: `✅ RSI ${rsi.toFixed(0)}` }); }
-  else if (rsi > 65) sig.push({ ok: 0, t: `⚠️ RSI ${rsi.toFixed(0)} OB` });
-  else sig.push({ ok: 0, t: `⚠️ RSI ${rsi.toFixed(0)} Weak` });
+  if (rsi >= 40 && rsi <= 65) {
+    score += 12; sig.push({ ok: 1, t: `✅ RSI ${rsi.toFixed(0)}` });
+  } else if (rsi > 65) {
+    sig.push({ ok: 0, t: `⚠️ RSI ${rsi.toFixed(0)} OB`, warn: 1 });
+  } else {
+    sig.push({ ok: 0, t: `⚠️ RSI ${rsi.toFixed(0)}`, warn: 1 });
+  }
 
-  if (vR > 1.5) { score += 12; sig.push({ ok: 1, t: `✅ Vol ${vR.toFixed(1)}x` }); }
-  else if (vR > 1) { score += 6; sig.push({ ok: 1, t: `✅ Vol ${vR.toFixed(1)}x` }); }
-  else sig.push({ ok: 0, t: `❌ Vol ${vR.toFixed(1)}x` });
+  if (vR > 1.5) {
+    score += 12; sig.push({ ok: 1, t: `✅ Vol ${vR.toFixed(1)}x` });
+  } else if (vR > 1) {
+    score += 6; sig.push({ ok: 1, t: `✅ Vol ${vR.toFixed(1)}x` });
+  } else {
+    sig.push({ ok: 0, t: `❌ Vol ${vR.toFixed(1)}x` });
+  }
 
   if (brk) { score += 12; sig.push({ ok: 1, t: '✅ Breakout' }); }
-  else sig.push({ ok: 0, t: '❌ No Breakout' });
+  else sig.push({ ok: 0, t: '❌ No BO' });
 
-  if (cl.length >= 5 && cl[cl.length - 1] > cl[cl.length - 5]) { score += 8; sig.push({ ok: 1, t: '✅ 5-Day Uptrend' }); }
-  else sig.push({ ok: 0, t: '❌ Short Down' });
+  if (cl.length >= 5 && cl[cl.length-1] > cl[cl.length-5]) {
+    score += 8; sig.push({ ok: 1, t: '✅ 5D Up' });
+  } else sig.push({ ok: 0, t: '❌ 5D Down' });
 
-  if (!macdDataOk) sig.push({ ok: 0, t: '⚠️ MACD ડેટા ઓછો', warn: 1 });
-  else if (macdBullish) { score += 12; sig.push({ ok: 1, t: '✅ MACD Bullish' }); }
-  else sig.push({ ok: 0, t: '❌ MACD Bearish' });
+  if (!macdOk) sig.push({ ok: 0, t: '⚠️ MACD ઓછો', warn: 1 });
+  else if (macdBullish) { score += 12; sig.push({ ok: 1, t: '✅ MACD Bull' }); }
+  else sig.push({ ok: 0, t: '❌ MACD Bear' });
 
-  let closePos = 0;
+  let cp = 0;
   if (last.h > last.l) {
-    closePos = ((last.c - last.l) / (last.h - last.l)) * 100;
-    if (closePos >= 85) { score += 15; sig.push({ ok: 1, t: `✅ Strong Close ${closePos.toFixed(0)}%` }); }
-    else if (closePos >= 70) { score += 8; sig.push({ ok: 1, t: `✅ Good Close ${closePos.toFixed(0)}%` }); }
-    else sig.push({ ok: 0, t: `⚠️ Weak Close ${closePos.toFixed(0)}%` });
+    cp = ((last.c - last.l) / (last.h - last.l)) * 100;
+    if (cp >= 85) { score += 15; sig.push({ ok: 1, t: `✅ Close ${cp.toFixed(0)}%` }); }
+    else if (cp >= 70) { score += 8; sig.push({ ok: 1, t: `✅ Close ${cp.toFixed(0)}%` }); }
+    else sig.push({ ok: 0, t: `⚠️ Close ${cp.toFixed(0)}%`, warn: 1 });
   }
 
   let chg = null;
-  if (d.length >= 2) {
-    const prevClose = d[d.length - 2].c;
-    if (prevClose > 0) {
-      chg = ((last.c - prevClose) / prevClose) * 100;
-      if (chg >= 1 && chg <= 8) { score += 12; sig.push({ ok: 1, t: `✅ Change +${chg.toFixed(1)}%` }); }
-      else if (chg > 8) { score += 4; sig.push({ ok: 0, t: `⚠️ Change +${chg.toFixed(1)}% વધુ`, warn: 1 }); }
-      else sig.push({ ok: 0, t: `❌ Change ${chg.toFixed(1)}%` });
-    }
+  if (last.prevC && last.prevC > 0) chg = ((last.c - last.prevC) / last.prevC) * 100;
+  else if (d.length >= 2) {
+    const pc = d[d.length-2].c;
+    if (pc > 0) chg = ((last.c - pc) / pc) * 100;
+  }
+  if (chg !== null) {
+    if (chg >= 1 && chg <= 8) { score += 12; sig.push({ ok: 1, t: `✅ +${chg.toFixed(1)}%` }); }
+    else if (chg > 8) { score += 4; sig.push({ ok: 0, t: `⚠️ +${chg.toFixed(1)}% વધુ`, warn: 1 }); }
+    else sig.push({ ok: 0, t: `❌ ${chg.toFixed(1)}%` });
   }
 
-  if (ma20 !== null && price > ma20) { score += 10; sig.push({ ok: 1, t: '✅ 20 MA ઉપર' }); }
-  else if (ma20 !== null) sig.push({ ok: 0, t: '❌ 20 MA નીચે' });
+  if (ma20 !== null && price > ma20) { score += 10; sig.push({ ok: 1, t: '✅ 20MA+' }); }
+  else if (ma20 !== null) sig.push({ ok: 0, t: '❌ 20MA-' });
 
-  let streak = 0;
-  for (let i = cl.length - 1; i >= 1; i--) { if (cl[i] > cl[i-1]) streak++; else break; }
-  if (streak >= 2) { score += 5; sig.push({ ok: 1, t: `✅ ${streak} દિવસ સતત વધારો` }); }
+  let st = 0;
+  for (let i = cl.length-1; i >= 1; i--) {
+    if (cl[i] > cl[i-1]) st++; else break;
+  }
+  if (st >= 2) { score += 5; sig.push({ ok: 1, t: `✅ ${st}D` }); }
 
-  const sl = price * (1 - SL_PCT / 100);
-  let t1 = price + (atr * ATR_TARGET_MULT);
-  if (t1 < price * (1 + TARGET_MIN / 100)) t1 = price * (1 + TARGET_MIN / 100);
-  if (t1 > price * (1 + TARGET_MAX / 100)) t1 = price * (1 + TARGET_MAX / 100);
+  const ca = last.h;
+  const entry = ca;
+  const sl = entry * (1 - SL_PCT/100);
+  let t1 = entry + (atr * ATR_TARGET_MULT);
+  if (t1 < entry * (1 + TARGET_MIN/100)) t1 = entry * (1 + TARGET_MIN/100);
+  if (t1 > entry * (1 + TARGET_MAX/100)) t1 = entry * (1 + TARGET_MAX/100);
   const t2 = t1 * 1.05;
-  const risk = price - sl;
-  const reward = t1 - price;
-  const rr = risk > 0 ? reward / risk : 0;
-  const profitPct = ((t1 - price) / price) * 100;
+  const rr = (entry - sl) > 0 ? (t1 - entry) / (entry - sl) : 0;
+  const pp = ((t1 - entry) / entry) * 100;
 
-  const supportWindow = d.slice(-10);
-  const supportEntry = Math.min(...supportWindow.map(x => x.l));
-  const SUPPORT_SL_PCT = SL_PCT + 2;
-  const supportSL = supportEntry * (1 - SUPPORT_SL_PCT / 100);
-  const supportProfitPct = supportEntry > 0 ? ((t1 - supportEntry) / supportEntry) * 100 : 0;
+  const sw = d.slice(-10);
+  const se = Math.min(...sw.map(x => x.l));
+  const ssl = se * (1 - (SL_PCT+2)/100);
+  let st1 = se + (atr * ATR_TARGET_MULT);
+  if (st1 < se * (1 + TARGET_MIN/100)) st1 = se * (1 + TARGET_MIN/100);
+  if (st1 > se * (1 + TARGET_MAX/100)) st1 = se * (1 + TARGET_MAX/100);
+  const spp = se > 0 ? ((st1 - se) / se) * 100 : 0;
 
   return {
-    sym, price, score, rsi, vR, sig, chg, ma20, streak, closePos,
-    entry: price, sl, t1, t2, rr, profitPct,
+    sym, price, score, rsi, vR, sig, chg, ma20,
+    streak: st, closePos: cp,
+    entry, sl, t1, t2, rr, profitPct: pp,
     macdLine, signalLine, histogram, macdBullish,
-    confirmAbove: last.h, freshBreakout, brk, breakoutAge,
-    supportEntry, supportSL, supportProfitPct,
-    volume: last.v, avgVolume: avgV, confirmVolOk: vR >= 1.5, requiredVolume: avgV * 1.5,
+    confirmAbove: ca, freshBreakout: fb, brk, breakoutAge: ba,
+    supportEntry: se, supportSL: ssl, supportT1: st1, supportProfitPct: spp,
+    volume: last.v, avgVolume: avgV,
+    confirmVolOk: vR >= 1.5,
+    requiredVolume: avgV * 1.5,
     cl
   };
 }
 
-function sparklineSVG(closes) {
-  if (!closes || closes.length < 2) return '';
+function sparklineSVG(cl) {
+  if (!cl || cl.length < 2) return { chart: '', changePct: 0, color: '#558b2f' };
   const w = 300, h = 46, pad = 3;
-  const min = Math.min(...closes), max = Math.max(...closes);
+  const min = Math.min(...cl), max = Math.max(...cl);
   const range = (max - min) || 1;
-  const step = (w - pad * 2) / (closes.length - 1);
-  const pts = closes.map((c, i) => {
-    const x = pad + i * step;
-    const y = h - pad - ((c - min) / range) * (h - pad * 2);
-    return x.toFixed(1) + ',' + y.toFixed(1);
-  });
-  const up = closes[closes.length - 1] >= closes[0];
+  const step = (w - pad * 2) / (cl.length - 1);
+  const pts = cl.map((c, i) =>
+    (pad + i * step).toFixed(1) + ',' + (h - pad - ((c - min) / range) * (h - pad * 2)).toFixed(1)
+  );
+  const up = cl[cl.length-1] >= cl[0];
   const color = up ? '#2e7d32' : '#c62828';
-  const fillColor = up ? 'rgba(46,125,50,0.15)' : 'rgba(198,40,40,0.15)';
-  const areaPts = `${pad},${h - pad} ` + pts.join(' ') + ` ${w - pad},${h - pad}`;
-  const changePct = ((closes[closes.length - 1] - closes[0]) / closes[0]) * 100;
-  const chart = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block;">
-    <polygon points="${areaPts}" fill="${fillColor}" stroke="none"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-  </svg>`;
-  return { chart, changePct, color };
+  const fill = up ? 'rgba(46,125,50,0.15)' : 'rgba(198,40,40,0.15)';
+  const area = `${pad},${h-pad} ` + pts.join(' ') + ` ${w-pad},${h-pad}`;
+  const chg = ((cl[cl.length-1] - cl[0]) / cl[0]) * 100;
+  const chart = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:44px;display:block;"><polygon points="${area}" fill="${fill}" stroke="none"/><polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  return { chart, changePct: chg, color };
 }
 
 function formatVol(n) {
-  if (n === undefined || n === null || isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '—';
   return Math.round(n).toLocaleString('en-IN');
 }
-function ema(a, p) { if (a.length < p) return null; const k = 2 / (p + 1); let e = a.slice(0, p).reduce((x, y) => x + y, 0) / p; for (let i = p; i < a.length; i++) e = a[i] * k + e * (1 - k); return e; }
+function ema(a, p) {
+  if (a.length < p) return null;
+  const k = 2 / (p + 1);
+  let e = a.slice(0, p).reduce((x, y) => x + y, 0) / p;
+  for (let i = p; i < a.length; i++) e = a[i] * k + e * (1 - k);
+  return e;
+}
 function calcRSI(c, p) {
   if (c.length < p + 1) return 50;
   let g = 0, l = 0;
   for (let i = 1; i <= p; i++) {
-    const df = c[i] - c[i - 1];
+    const df = c[i] - c[i-1];
     if (df >= 0) g += df; else l -= df;
   }
-  let avgG = g / p, avgL = l / p;
+  let ag = g / p, al = l / p;
   for (let i = p + 1; i < c.length; i++) {
-    const df = c[i] - c[i - 1];
+    const df = c[i] - c[i-1];
     const gain = df >= 0 ? df : 0;
     const loss = df < 0 ? -df : 0;
-    avgG = (avgG * (p - 1) + gain) / p;
-    avgL = (avgL * (p - 1) + loss) / p;
+    ag = (ag * (p - 1) + gain) / p;
+    al = (al * (p - 1) + loss) / p;
   }
-  if (avgL === 0) return 100;
-  return 100 - 100 / (1 + avgG / avgL);
+  if (al === 0) return 100;
+  return 100 - 100 / (1 + ag / al);
 }
-function calcATR(d, p) { if (d.length < p + 1) return 0; let s = 0; for (let i = d.length - p; i < d.length; i++) { s += Math.max(d[i].h - d[i].l, Math.abs(d[i].h - d[i - 1].c), Math.abs(d[i].l - d[i - 1].c)); } return s / p; }
+function calcATR(d, p) {
+  if (d.length < p + 1) return 0;
+  let s = 0;
+  for (let i = d.length - p; i < d.length; i++) {
+    s += Math.max(
+      d[i].h - d[i].l,
+      Math.abs(d[i].h - d[i-1].c),
+      Math.abs(d[i].l - d[i-1].c)
+    );
+  }
+  return s / p;
+}
 
 function filterStocks(type) {
   currentFilter = type;
@@ -1051,88 +1634,126 @@ function filterStocks(type) {
   if (type === 'buy') document.getElementById('statBuy').classList.add('active');
   if (type === 'strong') document.getElementById('statStrong').classList.add('active');
   render(allStocks);
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function searchStock() { searchTerm = document.getElementById('searchBox').value.trim().toUpperCase(); render(allStocks); }
-function openGoogleGraph(symbol) { window.open('https://www.google.com/search?q=NSE:' + encodeURIComponent(symbol) + '+share+price', '_blank'); }
+let sdt = null;
+function searchStock() {
+  clearTimeout(sdt);
+  sdt = setTimeout(() => {
+    searchTerm = document.getElementById('searchBox').value.trim().toUpperCase();
+    render(allStocks);
+  }, 250);
+}
+function openGoogleGraph(s) {
+  window.open('https://www.google.com/search?q=NSE:' + encodeURIComponent(s) + '+share+price', '_blank');
+}
 function toggleSupport(el) {
-  const panel = el.nextElementSibling;
-  const showing = panel.style.display !== 'none';
-  panel.style.display = showing ? 'none' : 'block';
-  el.textContent = showing ? '🔽 Support/Dip Entry જુઓ (વૈકલ્પિક, વહેલું entry)' : '🔼 Support/Dip Entry છુપાવો';
+  const p = el.nextElementSibling;
+  const sh = p.style.display !== 'none';
+  p.style.display = sh ? 'none' : 'block';
+  el.textContent = sh ? '🔽 Support Entry જુઓ' : '🔼 Support Entry છુપાવો';
 }
 
 function render(list) {
   const res = document.getElementById('results');
-  if (list.length === 0) {
-    res.innerHTML = '<div class="empty">❌ RSI ' + RSI_MIN + '-' + RSI_MAX + ' + R:R ' + MIN_RR + '+ + તાજું Breakout + Volume 1.5x+ વાળા શેર નથી.<br><small>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</small></div>';
+  if (!list.length) {
+    res.innerHTML = '<div class="empty">❌ Filter સાથે મેળ ખાતા શેર નથી.<br><br>' + MIN_DAYS + '+ દિવસનો ડેટા જોઈએ</div>';
     return;
   }
-  let filtered = list;
-  if (currentFilter === 'buy') filtered = list.filter(s => s.score >= MIN_SCORE);
-  else if (currentFilter === 'strong') filtered = list.filter(s => s.score >= STRONG_SCORE);
-  if (searchTerm) filtered = filtered.filter(s => s.sym.includes(searchTerm));
-
-  if (filtered.length === 0) { res.innerHTML = '<div class="empty">❌ આ ફિલ્ટરમાં કોઈ શેર નથી</div>'; return; }
-
-  const dateInfo = getLatestDate();
-  let title = '🛡️ Safe Signals';
-  if (currentFilter === 'buy') title = '🟢 Buy Signal (75+)';
-  if (currentFilter === 'strong') title = '💚 Strong Buy (100+)';
+  let f = list;
+  if (currentFilter === 'buy') f = list.filter(s => s.score >= MIN_SCORE);
+  else if (currentFilter === 'strong') f = list.filter(s => s.score >= STRONG_SCORE);
+  if (searchTerm) f = f.filter(s => s.sym.includes(searchTerm));
+  if (!f.length) {
+    res.innerHTML = '<div class="empty">' + (searchTerm ? '🔍 "' + searchTerm + '" મળ્યો નહીં' : '❌ આ ફિલ્ટરમાં કોઈ નથી') + '</div>';
+    return;
+  }
+  const di = getLatestDate();
+  let title = '🛡️ Signals';
+  if (currentFilter === 'buy') title = '🟢 Buy (75+)';
+  if (currentFilter === 'strong') title = '💚 Strong (110+)';
   if (searchTerm) title += ' — 🔍 ' + searchTerm;
+  const wl = fundamentalFilter.mode === 'whitelist'
+    ? `<span style="display:inline-block;margin-top:6px;padding:4px 10px;background:#e3f2fd;color:#0d47a1;border-radius:12px;font-size:12px;font-weight:800;">🏛️ Whitelist ${fundamentalFilter.symbols.length}</span>`
+    : '';
 
-  let h = `<div style="background:#f1f8e9;border-left:5px solid #43a047;border-radius:10px;padding:14px;margin-bottom:14px;">
-    <h2 style="color:#1b5e20;font-size:16px;margin-bottom:6px;">${title} — ${filtered.length} શેર</h2>
-    <div style="color:#558b2f;font-size:13px;">📅 તારીખ: <b>${dateInfo.formatted}</b></div>
-    <div style="color:#2e7d32;font-size:11px;margin-top:4px;">🔒 Filter: Score 75+ | RSI 40-65 | R:R 1.5+ | Volume 1.5x+ | Change ≤ 10%</div>
-    ${dataGap >= 2 ? `<div style="color:#c62828;font-size:12px;margin-top:6px;">⚠️ ${dataGap} દિવસ ખૂટે છે — MACD ખોટું હોઈ શકે</div>` : ''}
+  let h = `<div style="background:linear-gradient(135deg,#f1f8e9 0%,#e8f5e9 100%);border-left:6px solid #43a047;border-radius:12px;padding:16px 14px;margin-bottom:16px;">
+    <h2 style="color:#1b5e20;font-size:18px;margin-bottom:8px;font-weight:800;">${title} — ${f.length} શેર</h2>
+    <div style="color:#2e7d32;font-size:14px;font-weight:600;">📅 ${di.formatted}</div>
+    ${wl}
+    ${dataGap >= 2 ? `<div style="color:#c62828;font-size:13px;margin-top:8px;font-weight:600;">⚠️ ${dataGap} દિવસ ખૂટે — MACD ખોટું હોઈ શકે</div>` : ''}
+    ${f.length > 50 ? `<div style="color:#e65100;font-size:12.5px;margin-top:8px;font-weight:600;">ℹ️ પહેલા 50 — બાકીના Excel માં</div>` : ''}
   </div>`;
 
-  filtered.slice(0, 50).forEach((s, i) => {
-    const cl = s.score >= STRONG_SCORE ? '' : (s.score >= MIN_SCORE ? 'med' : 'bad');
-    const spark = sparklineSVG(s.cl);
-    h += `<div class="card ${cl}">
-      <div class="ch">
-        <div class="cn link" onclick="openGoogleGraph('${s.sym}')">#${i + 1} ${s.sym} 🔗</div>
-        <div class="cs ${cl}">${s.score}/140</div>
+  f.slice(0, 50).forEach((s, i) => {
+    const isStrong = s.score >= STRONG_SCORE;
+    const cc = isStrong ? '' : 'med';
+    const barCls = isStrong ? '' : 'med';
+    const barPct = Math.min(100, Math.round((s.score / MAX_SCORE) * 100));
+    const sp = sparklineSVG(s.cl);
+
+    let bl = '';
+    if (s.brk) {
+      if (s.breakoutAge === 0) bl = `<div style="font-size:13px;margin-bottom:10px;color:#2e7d32;font-weight:700;">🆕 આજનું Breakout</div>`;
+      else if (s.breakoutAge === 1) bl = `<div style="font-size:13px;margin-bottom:10px;color:#1565c0;font-weight:700;">📈 ગઈકાલનું Breakout</div>`;
+      else bl = `<div style="font-size:13px;margin-bottom:10px;color:#558b2f;font-weight:700;">✅ Breakout (${s.breakoutAge}D)</div>`;
+    }
+
+    h += `<div class="card ${cc}">
+      <div class="ch"><div class="cn link" onclick="openGoogleGraph('${s.sym}')">#${i+1} ${s.sym}</div><div class="cs ${cc}">${s.score}/${MAX_SCORE}</div></div>
+      <div class="score-bar-wrap"><div class="score-bar ${barCls}" style="width:${barPct}%"></div></div>
+
+      <div class="verdict ${isStrong ? 'strong' : 'buy'}">
+        <span>${isStrong ? '🟢 STRONG BUY' : '🟢 BUY'}</span>
+        <span class="verdict-entry">🎯 Entry ₹${s.confirmAbove.toFixed(2)} ઉપર</span>
       </div>
-      <div style="margin-bottom:6px;">
-        <span class="safe-badge">🛡️ SL 3% | Target ${s.profitPct.toFixed(1)}%</span>
-        <span class="safe-badge" style="margin-left:4px;background:${s.macdBullish ? '#c8e6c9' : '#ffcdd2'};color:${s.macdBullish ? '#1b5e20' : '#c62828'};">MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}</span>
-        <span class="safe-badge" style="margin-left:4px;">R:R ${s.rr.toFixed(2)}</span>
+
+      <div style="margin-bottom:10px;">
+        <span class="safe-badge">🛡️ SL ${SL_PCT}% | Tgt ${s.profitPct.toFixed(1)}%</span>
+        <span class="safe-badge" style="background:${s.macdBullish ? '#c8e6c9' : '#ffcdd2'};color:${s.macdBullish ? '#1b5e20' : '#c62828'};">MACD ${s.histogram >= 0 ? '+' : ''}${s.histogram.toFixed(2)}</span>
+        <span class="safe-badge">R:R ${s.rr.toFixed(2)}</span>
       </div>
-      <div style="background:#f9fbe7;border:1px solid #dcedc8;border-radius:6px;padding:6px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">${spark.chart}</div>
+
+      <div style="background:#f9fbe7;border:1px solid #dcedc8;border-radius:8px;padding:8px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">${sp.chart}</div>
         <div style="text-align:right;white-space:nowrap;">
-          <div style="font-size:11px;color:#689f38;">${s.cl.length} દિવસ</div>
-          <div style="font-size:13px;font-weight:bold;color:${spark.color};">${spark.changePct >= 0 ? '+' : ''}${spark.changePct.toFixed(1)}%</div>
+          <div style="font-size:12px;color:#558b2f;font-weight:600;">${s.cl.length}D trend</div>
+          <div style="font-size:15px;font-weight:800;color:${sp.color};">${sp.changePct >= 0 ? '+' : ''}${sp.changePct.toFixed(1)}%</div>
         </div>
       </div>
-      <div style="font-size:11.5px;color:#e65100;margin-bottom:4px;">⏳ Confirm Entry: ભાવ ₹${s.confirmAbove.toFixed(2)} ઉપર જાય પછી જ ખરીદો</div>
-      <div style="font-size:11.5px;color:#e65100;margin-bottom:8px;">${s.confirmVolOk ? '✅' : '⚠️'} Actual Volume: ${formatVol(s.volume)} | જરૂરી Volume: ${formatVol(s.requiredVolume)}</div>
-      ${s.brk ? `<div style="font-size:11.5px;margin-bottom:8px;color:${s.breakoutAge === 0 ? '#2e7d32' : (s.breakoutAge === 1 ? '#1565c0' : '#558b2f')};">${s.breakoutAge === 0 ? '🆕 આજનું Breakout' : (s.breakoutAge === 1 ? '📈 ગઈકાલનું Breakout — હજુ ચાલુ' : '✅ Breakout (તાજું ચોક્કસ ચકાસી ના શકાયું)')}</div>` : ''}
+
+      <div class="entry-box">
+        <div class="entry-row"><span>🎯 Entry</span><span class="entry-val">₹${s.confirmAbove.toFixed(2)} ઉપર</span></div>
+        <div class="entry-row"><span>📊 Volume</span><span class="${s.confirmVolOk ? 'ok' : 'warn'}">${formatVol(s.volume)} / જરૂરી ${formatVol(s.requiredVolume)} ${s.confirmVolOk ? '✅' : '⚠️'}</span></div>
+      </div>
+
+      ${bl}
+
       <div class="cd">
-        <div class="d"><div class="dl">ભાવ</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
+        <div class="d"><div class="dl">Close</div><div class="dv">₹${s.price.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Entry</div><div class="dv g">₹${s.entry.toFixed(2)}</div></div>
         <div class="d"><div class="dl">SL</div><div class="dv r">₹${s.sl.toFixed(2)}</div></div>
-        <div class="d"><div class="dl">Target1</div><div class="dv g">₹${s.t1.toFixed(2)}</div></div>
-        <div class="d"><div class="dl">Target2</div><div class="dv g">₹${s.t2.toFixed(2)}</div></div>
-        <div class="d"><div class="dl">નફો %</div><div class="dv g">${s.profitPct.toFixed(1)}%</div></div>
+        <div class="d"><div class="dl">T1</div><div class="dv g">₹${s.t1.toFixed(2)}</div></div>
+        <div class="d"><div class="dl">T2</div><div class="dv g">₹${s.t2.toFixed(2)}</div></div>
+        <div class="d"><div class="dl">નફો%</div><div class="dv g">${s.profitPct.toFixed(1)}%</div></div>
         <div class="d"><div class="dl">R:R</div><div class="dv g">${s.rr.toFixed(2)}</div></div>
         <div class="d"><div class="dl">RSI</div><div class="dv">${s.rsi.toFixed(0)}</div></div>
         <div class="d"><div class="dl">MACD</div><div class="dv ${s.macdBullish ? 'g' : 'r'}">${s.histogram.toFixed(2)}</div></div>
         <div class="d"><div class="dl">Close%</div><div class="dv ${s.closePos >= 70 ? 'g' : 'o'}">${s.closePos.toFixed(0)}%</div></div>
-        <div class="d"><div class="dl">Change%</div><div class="dv ${s.chg === null ? '' : (s.chg >= 1 && s.chg <= 8 ? 'g' : (s.chg > 8 ? 'o' : 'r'))}">${s.chg !== null ? (s.chg >= 0 ? '+' : '') + s.chg.toFixed(1) : '—'}</div></div>
-        <div class="d"><div class="dl">Streak</div><div class="dv">${s.streak > 0 ? s.streak + ' દિ' : '—'}</div></div>
+        <div class="d"><div class="dl">Chg%</div><div class="dv ${s.chg === null ? '' : (s.chg >= 1 && s.chg <= 8 ? 'g' : (s.chg > 8 ? 'o' : 'r'))}">${s.chg !== null ? (s.chg >= 0 ? '+' : '') + s.chg.toFixed(1) : '—'}</div></div>
+        <div class="d"><div class="dl">Streak</div><div class="dv">${s.streak > 0 ? s.streak + 'D' : '—'}</div></div>
       </div>
+
       <div class="sig">${s.sig.map(x => `<span class="s ${x.ok ? '' : (x.warn ? 'warn' : 'no')}">${x.t}</span>`).join('')}</div>
-      <div class="support-toggle" onclick="toggleSupport(this)">🔽 Support/Dip Entry જુઓ (વૈકલ્પિક, વહેલું entry)</div>
+
+      <div class="support-toggle" onclick="toggleSupport(this)">🔽 Support Entry જુઓ</div>
       <div class="support-panel" style="display:none;">
         <div class="cd">
-          <div class="d"><div class="dl">Support Entry</div><div class="dv g">₹${s.supportEntry.toFixed(2)}</div></div>
-          <div class="d"><div class="dl">SL (પહોળું)</div><div class="dv r">₹${s.supportSL.toFixed(2)}</div></div>
-          <div class="d"><div class="dl">નફો %</div><div class="dv g">${s.supportProfitPct.toFixed(1)}%</div></div>
+          <div class="d"><div class="dl">Support</div><div class="dv g">₹${s.supportEntry.toFixed(2)}</div></div>
+          <div class="d"><div class="dl">SL</div><div class="dv r">₹${s.supportSL.toFixed(2)}</div></div>
+          <div class="d"><div class="dl">Target</div><div class="dv g">₹${s.supportT1.toFixed(2)}</div></div>
+          <div class="d"><div class="dl">નફો%</div><div class="dv g">${s.supportProfitPct.toFixed(1)}%</div></div>
         </div>
       </div>
     </div>`;
@@ -1140,135 +1761,295 @@ function render(list) {
   res.innerHTML = h;
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-  await openDB();
-  await updateStatus();
-  await refreshReminder();
-  document.getElementById('nseTodayLink').href = nseLinkForDate(todayIsoLocal());
-  try {
-    const m = await getDB(META, 'info');
-    if (m && m.stocks) await loadFromDB();
-  } catch (e) { console.log(e); }
-  setInterval(refreshReminder, 5 * 60 * 1000);
-});
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-}
-
+/* ===== Cloud Sync ===== */
 const GH_DEFAULTS = { owner: 'bhavikpeepee02-8966', repo: 'Bvkdatabkp', token: '', path: 'nse-scanner-macd-pro.json' };
 const GH_SETTINGS_KEY = 'ghSyncSettingsV7_' + GH_DEFAULTS.path;
-let syncInFlight = false;
+const BACKUP_VERSION = 4;
 
 async function collectAllData() {
   const stocks = await getDB(STORE, 'all') || {};
-  const meta = await getDB(META, 'info') || {};
   const signals = await getAllDB(SIGNALS);
-  return { stocks, meta, signals };
+  const idx = await getDB(META, 'indexConstituents') || {};
+  const slimStocks = {};
+  for (const sym in stocks) {
+    const arr = stocks[sym];
+    if (!arr || !arr.length) continue;
+    slimStocks[sym] = arr.slice(-CLOUD_OHLCV_DAYS);
+  }
+  return {
+    stocks: slimStocks, signals,
+    indexConstituents: idx,
+    _v: BACKUP_VERSION,
+    _exportedAt: new Date().toISOString()
+  };
 }
+
 async function restoreAllData(obj) {
-  await saveDB(STORE, 'all', obj.stocks || {});
-  await saveDB(META, 'info', obj.meta || {});
-  if (Array.isArray(obj.signals)) { for (const sig of obj.signals) { if (sig && sig.date) await saveDB(SIGNALS, 'signal_' + sig.date, sig); } }
+  if (!obj || typeof obj !== 'object') throw new Error('અમાન્ય backup ફાઈલ');
+  const ver = obj._v || 1;
+  if (ver > BACKUP_VERSION) {
+    throw new Error('આ backup version ' + ver + ' નું છે — app update કરો');
+  }
+  suppressAutoSync = true;
+  try {
+    await ensureDB().then(d => new Promise((res, rej) => {
+      const tx = d.transaction(SIGNALS, 'readwrite');
+      tx.objectStore(SIGNALS).clear();
+      tx.oncomplete = () => res();
+      tx.onerror = e => rej(e.target.error);
+    }));
+    const stocks = obj.stocks || {};
+    const allDatesSet = new Set();
+    for (const sym in stocks) {
+      (stocks[sym] || []).forEach(x => x.date && allDatesSet.add(x.date));
+    }
+    const allSorted = Array.from(allDatesSet).sort();
+    if (allSorted.length > MAX_DAYS) {
+      const keep = new Set(allSorted.slice(-MAX_DAYS));
+      for (const sym in stocks) {
+        stocks[sym] = (stocks[sym] || []).filter(x => keep.has(x.date));
+      }
+    }
+    await saveDB(STORE, 'all', stocks);
+
+    const fds = new Set();
+    for (const sym in stocks) {
+      (stocks[sym] || []).forEach(x => x.date && fds.add(x.date));
+    }
+    const sd = Array.from(fds).sort();
+    await saveDB(META, 'info', {
+      days: sd.length,
+      stocks: Object.keys(stocks).length,
+      dateRange: sd.length ? sd[0] + ' → ' + sd[sd.length-1] : '-',
+      removed: 0, gap: detectGap(sd), dates: sd,
+      restoredAt: new Date().toISOString()
+    });
+    if (obj.indexConstituents) await saveDB(META, 'indexConstituents', obj.indexConstituents);
+    if (Array.isArray(obj.signals)) {
+      for (const sig of obj.signals) {
+        if (sig && sig.date) await saveDB(SIGNALS, 'signal_' + sig.date, sig);
+      }
+    }
+    await cleanupOldSignals();
+  } finally {
+    suppressAutoSync = false;
+    clearTimeout(autoSyncTimer);
+  }
 }
-function loadGhSettings() { try { return JSON.parse(localStorage.getItem(GH_SETTINGS_KEY)) || {}; } catch (e) { return {}; } }
-function saveGhSettings(s) { localStorage.setItem(GH_SETTINGS_KEY, JSON.stringify(s)); }
 
-const ghOwnerInput = document.getElementById('ghOwner');
-const ghRepoInput = document.getElementById('ghRepo');
-const ghTokenInput = document.getElementById('ghToken');
-const ghPathInput = document.getElementById('ghPath');
-const ghSyncStatus = document.getElementById('ghSyncStatus');
-
-(function initGhFields() {
-  const s = loadGhSettings();
-  ghOwnerInput.value = s.owner || GH_DEFAULTS.owner;
-  ghRepoInput.value = s.repo || GH_DEFAULTS.repo;
-  ghTokenInput.value = s.token || GH_DEFAULTS.token;
-  ghPathInput.value = s.path || GH_DEFAULTS.path;
-})();
+function loadGhSettings() {
+  try { return JSON.parse(localStorage.getItem(GH_SETTINGS_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveGhSettings(s) {
+  try { localStorage.setItem(GH_SETTINGS_KEY, JSON.stringify(s)); } catch (e) { console.warn(e); }
+}
 
 function currentGhConfig() {
-  return { owner: ghOwnerInput.value.trim(), repo: ghRepoInput.value.trim(), token: ghTokenInput.value.trim(), path: (ghPathInput.value.trim() || GH_DEFAULTS.path) };
+  return {
+    owner: document.getElementById('ghOwner').value.trim(),
+    repo: document.getElementById('ghRepo').value.trim(),
+    token: document.getElementById('ghToken').value.trim(),
+    path: (document.getElementById('ghPath').value.trim() || GH_DEFAULTS.path)
+  };
 }
-function setGhStatus(msg, ok) { ghSyncStatus.textContent = msg; ghSyncStatus.style.color = ok === true ? '#2e7d32' : (ok === false ? '#c62828' : '#558b2f'); }
+function setGhStatus(msg, ok) {
+  const el = document.getElementById('ghSyncStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#2e7d32' : (ok === false ? '#c62828' : '#2e7d32');
+}
+
+function toB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+  }
+  return btoa(bin);
+}
 
 async function pushToCloud(silent) {
   const cfg = currentGhConfig();
-  if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) { if (!silent) setGhStatus('❌ Username, Repo, Token ભરો.', false); return; }
-  saveGhSettings({ owner: cfg.owner, repo: cfg.repo, token: cfg.token, path: cfg.path });
-  if (syncInFlight) { if (!silent) setGhStatus('⏳ પહેલેથી sync ચાલુ છે, રાહ જુઓ...'); return; }
+  if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) {
+    if (!silent) setGhStatus('❌ Username, Repo, Token ભરો.', false);
+    return;
+  }
+  saveGhSettings(cfg);
+  if (syncInFlight) {
+    if (!silent) setGhStatus('⏳ પહેલેથી sync ચાલુ...');
+    return;
+  }
   syncInFlight = true;
   if (!silent) setGhStatus('⏳ Save થાય છે...');
   try {
     const dataStr = JSON.stringify(await collectAllData());
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-    async function attemptSave() {
-      let sha = undefined;
-      const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' } });
-      if (getRes.status === 200) { const j = await getRes.json(); sha = j.sha; }
-      else if (getRes.status !== 404) throw new Error('Read error: ' + getRes.status);
-      return fetch(apiUrl, {
+    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
+    async function attempt() {
+      let sha;
+      const g = await fetch(url, {
+        headers: {
+          'Authorization': `token ${cfg.token}`,
+          'Accept': 'application/vnd.github+json'
+        }
+      });
+      if (g.status === 200) sha = (await g.json()).sha;
+      else if (g.status !== 404) throw new Error('Read ' + g.status);
+      return fetch(url, {
         method: 'PUT',
-        headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Auto backup ' + new Date().toISOString(), content: btoa(unescape(encodeURIComponent(dataStr))), sha })
+        headers: {
+          'Authorization': `token ${cfg.token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Auto backup ' + new Date().toISOString(),
+          content: toB64(dataStr),
+          sha
+        })
       });
     }
-    let putRes = await attemptSave();
-    if (!putRes.ok && putRes.status === 422) {
-      await new Promise(r => setTimeout(r, 400));
-      putRes = await attemptSave();
+    let r = await attempt();
+    if (!r.ok && r.status === 422) {
+      await new Promise(x => setTimeout(x, 400));
+      r = await attempt();
     }
-    if (!putRes.ok) { const t = await putRes.text(); throw new Error('Save error: ' + putRes.status + ' ' + t.slice(0, 150)); }
+    if (!r.ok) throw new Error('Save ' + r.status);
     const now = new Date();
-    localStorage.setItem(GH_SETTINGS_KEY + '_lastSync', now.toISOString());
+    try { localStorage.setItem(GH_SETTINGS_KEY + '_lastSync', now.toISOString()); } catch (e) {}
     setGhStatus('✅ Auto-sync (' + now.toLocaleString('gu-IN') + ')', true);
-  } catch (err) { setGhStatus('❌ Auto-sync નિષ્ફળ: ' + err.message, false); }
-  finally { syncInFlight = false; }
+  } catch (err) {
+    setGhStatus('❌ Auto-sync: ' + err.message, false);
+  } finally {
+    syncInFlight = false;
+  }
 }
-document.getElementById('ghSaveBtn').addEventListener('click', () => pushToCloud(false));
 
-let autoSyncTimer = null;
 function scheduleAutoSync() {
+  if (suppressAutoSync) return;
   const s = loadGhSettings();
   if (!s.owner || !s.repo || !s.token || !s.path) return;
   clearTimeout(autoSyncTimer);
-  autoSyncTimer = setTimeout(() => pushToCloud(true), 4000);
+  autoSyncTimer = setTimeout(() => pushToCloud(true), 15000);
 }
-(function watchDBForAutoSync() {
-  const origSaveDB = saveDB;
-  saveDB = function(store, key, val) {
-    return origSaveDB(store, key, val).then(res => { scheduleAutoSync(); return res; });
-  };
-})();
+onDBWrite(() => scheduleAutoSync());
 
 function showLastSyncTime() {
   const t = localStorage.getItem(GH_SETTINGS_KEY + '_lastSync');
   if (t) {
-    try { setGhStatus('છેલ્લે sync: ' + new Date(t).toLocaleString('gu-IN')); } catch (e) {}
+    try {
+      setGhStatus('છેલ્લે sync: ' + new Date(t).toLocaleString('gu-IN'));
+    } catch (e) {}
   }
 }
-showLastSyncTime();
 
-document.getElementById('ghRestoreBtn').addEventListener('click', async () => {
-  const cfg = currentGhConfig();
-  if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) { setGhStatus('❌ ભરો.', false); return; }
-  if (!confirm('Restore કરવાથી ડેટા બદલાશે. ચાલુ રાખવું?')) return;
-  saveGhSettings({ owner: cfg.owner, repo: cfg.repo, token: cfg.token, path: cfg.path });
-  setGhStatus('⏳ Restore...');
+/* ===== Boot ===== */
+window.addEventListener('DOMContentLoaded', async () => {
   try {
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
-    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.raw' } });
-    if (getRes.status === 404) { setGhStatus('❌ Backup નથી.', false); return; }
-    if (!getRes.ok) throw new Error('Read error: ' + getRes.status);
-    const dataStr = await getRes.text();
-    let obj;
-    try { obj = JSON.parse(dataStr); } catch (e) { setGhStatus('❌ ડેટા વાંચી ના શકાયો.', false); return; }
-    await restoreAllData(obj);
-    setGhStatus('✅ Restore — પેજ લોડ થાય છે...', true);
-    setTimeout(() => location.reload(), 900);
-  } catch (err) { setGhStatus('❌ Restore નિષ્ફળ: ' + err.message, false); }
+    await openDB();
+    
+    // Fundamentals load
+    const f = await getDB(META, 'fundamentals');
+    if (f) {
+      fundamentalFilter = {
+        mode: f.mode || 'off',
+        symbols: f.symbols || [],
+        symbolSet: new Set((f.symbols || []).map(s => String(s).toUpperCase()))
+      };
+    }
+    
+    await updateFundToggle();
+    await updateStockFilterStatus();
+    await updateStatus();
+    await refreshReminder();
+
+    // BhavCopy today link
+    const nseTodayLink = document.getElementById('nseTodayLink');
+    if (nseTodayLink) {
+      const iso = getLastTradingDayIso();
+      const formatted = iso.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+      nseTodayLink.href = nseLinkForDate(formatted);
+    }
+
+    // Auto-load data
+    try {
+      const m = await getDB(META, 'info');
+      if (m && m.stocks) await loadFromDB();
+    } catch (e) { console.log('auto-load:', e); }
+
+    // GH settings init
+    const s = loadGhSettings();
+    document.getElementById('ghOwner').value = s.owner || GH_DEFAULTS.owner;
+    document.getElementById('ghRepo').value = s.repo || GH_DEFAULTS.repo;
+    document.getElementById('ghToken').value = s.token || GH_DEFAULTS.token;
+    document.getElementById('ghPath').value = s.path || GH_DEFAULTS.path;
+    showLastSyncTime();
+
+    // Switch event
+    const fundToggle = document.getElementById('fundToggleBtn');
+    if (fundToggle) {
+      fundToggle.addEventListener('change', async (e) => {
+        const on = e.target.checked;
+        if (on && fundamentalFilter.symbols.length === 0) {
+          e.target.checked = false;
+          alert('⚠️ Whitelist ખાલી છે — પહેલા Quality Stocks Load કરો અથવા Nifty CSV upload કરો.');
+          return;
+        }
+        const newMode = on ? 'whitelist' : 'off';
+        await saveDB(META, 'fundamentals', {
+          mode: newMode,
+          symbols: fundamentalFilter.symbols,
+          updatedAt: new Date().toISOString()
+        });
+        fundamentalFilter.mode = newMode;
+        updateFundToggle();
+        analyze();
+      });
+    }
+
+    // GH buttons
+    document.getElementById('ghSaveBtn').addEventListener('click', () => pushToCloud(false));
+    document.getElementById('ghRestoreBtn').addEventListener('click', async () => {
+      const cfg = currentGhConfig();
+      if (!cfg.owner || !cfg.repo || !cfg.token || !cfg.path) {
+        setGhStatus('❌ ભરો.', false); return;
+      }
+      if (!confirm('Restore કરવાથી ડેટા બદલાશે. ચાલુ રાખવું?')) return;
+      saveGhSettings(cfg);
+      setGhStatus('⏳ Restore...');
+      try {
+        const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(cfg.path)}`;
+        const r = await fetch(url, {
+          headers: {
+            'Authorization': `token ${cfg.token}`,
+            'Accept': 'application/vnd.github.raw'
+          }
+        });
+        if (r.status === 404) { setGhStatus('❌ Backup નથી.', false); return; }
+        if (!r.ok) throw new Error('Read ' + r.status);
+        const obj = JSON.parse(await r.text());
+        await restoreAllData(obj);
+        setGhStatus('✅ Restore — reload...', true);
+        setTimeout(() => location.reload(), 900);
+      } catch (err) {
+        setGhStatus('❌ Restore: ' + err.message, false);
+      }
+    });
+
+    // Periodic refresh
+    setInterval(refreshReminder, 5 * 60 * 1000);
+    setInterval(updateStockFilterStatus, 60 * 60 * 1000);
+  } catch (err) {
+    console.error('Boot error:', err);
+    alert('App load error: ' + err.message);
+  }
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
