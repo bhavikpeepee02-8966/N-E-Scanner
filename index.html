@@ -124,7 +124,6 @@
   .sync-card .btn-restore { background: #fff; color: #1b5e20; border: 2px solid #2e7d32 !important; }
   .sync-status { font-size: 13px; margin-top: 12px; min-height: 1.3em; font-weight: 600; line-height: 1.5; }
 
-  /* ===== Stock Filter Card ===== */
   .stock-filter-card {
     background: #ffffff;
     border: 2px solid #c5e1a5;
@@ -207,7 +206,6 @@
     font-weight: 500;
   }
 
-  /* Switch */
   .fund-toggle-row { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 2px solid #90caf9; border-radius: 12px; padding: 12px 14px; margin: 14px 0; gap: 10px; }
   .fund-toggle-row .switch-label { font-size: 14.5px; font-weight: 700; color: #0d47a1; line-height: 1.3; }
   .fund-toggle-row .switch-sub { font-size: 12px; color: #1565c0; font-weight: 600; margin-top: 3px; line-height: 1.3; }
@@ -220,7 +218,6 @@
   .fund-switch input:checked + .slider { background: #1976d2; }
   .fund-switch input:checked + .slider::before { transform: translateX(20px); }
 
-  /* ===== Collapsible Entry Tracker + Performance ===== */
   .collapse-card {
     background: #ffffff;
     border: 2px solid #ff9800;
@@ -337,7 +334,6 @@
   <input type="text" id="searchBox" class="search-box" placeholder="🔍 શેર શોધો (RELIANCE, TCS)" oninput="searchStock()">
   <div id="results"><div class="empty">📂 ઉપર ZIP ફાઈલ અપલોડ કરો</div></div>
 
-  <!-- Entry Tracker -->
   <details class="collapse-card" id="entryTrackerWrap">
     <summary>
       <span>🎯 Entry Tracker</span>
@@ -346,7 +342,6 @@
     <div id="entryTracker"></div>
   </details>
 
-  <!-- Performance -->
   <details class="collapse-card" id="trackingWrap">
     <summary>
       <span>📊 Performance</span>
@@ -355,7 +350,6 @@
     <div id="trackingResult"></div>
   </details>
 
-  <!-- ===== STOCK FILTER CARD ===== -->
   <div class="stock-filter-card">
     <h3>🎯 Stock Filter</h3>
     
@@ -385,7 +379,6 @@
       Nifty CSV = index-based filter. 30 દિવસ પછી reminder આવશે.
     </div>
     
-    <!-- ===== SWITCH ===== -->
     <div class="fund-toggle-row">
       <div style="flex:1;">
         <div class="switch-label">🏛️ ફક્ત પસંદ કરેલા શેર સ્કેન કરો</div>
@@ -402,7 +395,6 @@
     </button>
   </div>
 
-  <!-- Cloud Sync -->
   <div class="sync-card">
     <h3>☁️ GitHub Cloud Sync</h3>
     <p class="hint">ડેટા private GitHub repo માં જાય છે. ZIP upload પછી આપોઆપ sync થશે.</p>
@@ -671,7 +663,6 @@ async function loadQualityStocks() {
   try {
     let symbols = [];
     
-    // Pehla try: NSE thi direct fetch (CORS issue hoi shake)
     try {
       const r = await fetch('https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv');
       if (r.ok) {
@@ -682,7 +673,6 @@ async function loadQualityStocks() {
       console.log('NSE fetch failed:', e.message);
     }
     
-    // Fallback: stored list
     if (!symbols.length) {
       const stored = await getDB(META, 'indexConstituents');
       if (stored && stored.symbols && stored.symbols.length) {
@@ -702,7 +692,6 @@ async function loadQualityStocks() {
       return;
     }
     
-    // Save
     await saveDB(META, 'indexConstituents', {
       symbols: symbols,
       count: symbols.length,
@@ -1357,9 +1346,10 @@ function exportPortfolio() {
   let id = 1;
   list.forEach(s => {
     const ns = s.sym + '.NS';
-    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","","","","","","","","","","","",""\n`;
+    const note = `Required Price ${s.confirmAbove.toFixed(2)} | Required Vol ${Math.round(s.requiredVolume).toLocaleString('en-IN')}`;
+    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","","","","","","","","","","","${note}",""\n`;
     id++;
-    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gd}","${ts}","","","Buy","","","",""\n`;
+    csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gd}","${ts}","","","Buy","","","${note}",""\n`;
     id++;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1948,7 +1938,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     await openDB();
     
-    // Fundamentals load
     const f = await getDB(META, 'fundamentals');
     if (f) {
       fundamentalFilter = {
@@ -1963,7 +1952,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     await updateStatus();
     await refreshReminder();
 
-    // BhavCopy today link
     const nseTodayLink = document.getElementById('nseTodayLink');
     if (nseTodayLink) {
       const iso = getLastTradingDayIso();
@@ -1971,13 +1959,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       nseTodayLink.href = nseLinkForDate(formatted);
     }
 
-    // Auto-load data
     try {
       const m = await getDB(META, 'info');
       if (m && m.stocks) await loadFromDB();
     } catch (e) { console.log('auto-load:', e); }
 
-    // GH settings init
     const s = loadGhSettings();
     document.getElementById('ghOwner').value = s.owner || GH_DEFAULTS.owner;
     document.getElementById('ghRepo').value = s.repo || GH_DEFAULTS.repo;
@@ -1985,7 +1971,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('ghPath').value = s.path || GH_DEFAULTS.path;
     showLastSyncTime();
 
-    // Switch event
     const fundToggle = document.getElementById('fundToggleBtn');
     if (fundToggle) {
       fundToggle.addEventListener('change', async (e) => {
@@ -2007,7 +1992,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // GH buttons
     document.getElementById('ghSaveBtn').addEventListener('click', () => pushToCloud(false));
     document.getElementById('ghRestoreBtn').addEventListener('click', async () => {
       const cfg = currentGhConfig();
@@ -2036,7 +2020,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Periodic refresh
     setInterval(refreshReminder, 5 * 60 * 1000);
     setInterval(updateStockFilterStatus, 60 * 60 * 1000);
   } catch (err) {
