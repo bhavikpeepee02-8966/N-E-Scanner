@@ -593,6 +593,17 @@ function getLastTradingDayIso() {
   return todayIsoLocal().replace(/-/g,'');
 }
 
+/* ✅ NEW: Next Trading Day helper */
+function getNextTradingDay(fromDate) {
+  const d = new Date(fromDate);
+  d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 14; i++) {
+    if (isTradingDay(d)) return d;
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
+}
+
 /* ===== Index CSV Upload ===== */
 async function handleIndexCsv(event) {
   const files = Array.from(event.target.files || []);
@@ -1331,22 +1342,35 @@ function exportExcel() {
   document.body.removeChild(link);
 }
 
+/* ✅ UPDATED: Portfolio Export — Next Trading Day + NSC Scanner tag */
 function exportPortfolio() {
   if (!allStocks.length) { alert('પહેલા ડેટા લોડ કરો'); return; }
   let list = allStocks.filter(s => s.score >= STRONG_SCORE);
   let fb = false;
   if (!list.length) { list = allStocks.slice(0, 10); fb = true; }
+  
   const di = getLatestDate();
-  const today = new Date();
-  const ds = (di.raw && di.raw.length === 8) ? fmtDateFull(di.raw) : `${pad2(today.getDate())}-${pad2(today.getMonth()+1)}-${today.getFullYear()}`;
+  
+  // BhavCopy latest date → next trading day
+  let baseDate;
+  if (di.raw && di.raw.length === 8) {
+    baseDate = parseYYYYMMDD(di.raw);
+  } else {
+    baseDate = new Date();
+  }
+  const nextDay = getNextTradingDay(baseDate);
+  const ds = pad2(nextDay.getDate()) + '-' + pad2(nextDay.getMonth()+1) + '-' + nextDay.getFullYear();
   const gd = ds + ' GMT+0530';
+  
+  const today = new Date();
   const ts = pad2(today.getHours()) + ':' + pad2(today.getMinutes()) + ':' + pad2(today.getSeconds());
   const H = ['Id','Symbol','Name','Display Symbol','Exchange','Portfolio','Currency','Shares Owned','Cost Per Share','Commission','Transaction Date','Transaction Time','Purchase Exchange Rate','Purchase Exchange Currencies','Type','Accounting','Accounting Execution Ids','Notes','OutgoingCashLink'];
   let csv = H.join(',') + '\n';
   let id = 1;
   list.forEach(s => {
     const ns = s.sym + '.NS';
-    const note = `Required Price ${s.confirmAbove.toFixed(2)} | Required Vol ${Math.round(s.requiredVolume).toLocaleString('en-IN')}`;
+    // ✅ "NSC Scanner" tag in Notes
+    const note = `NSC Scanner | Required Price ${s.confirmAbove.toFixed(2)} | Required Vol ${Math.round(s.requiredVolume).toLocaleString('en-IN')}`;
     csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","","","","","","","","","","","${note}",""\n`;
     id++;
     csv += `"${id}","${ns}","${s.sym}","","NSI","${ds}","INR","1","${s.confirmAbove.toFixed(2)}","0","${gd}","${ts}","","","Buy","","","${note}",""\n`;
@@ -1355,13 +1379,17 @@ function exportPortfolio() {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'MSP-Portfolios-' + today.getFullYear() + '-' + pad2(today.getMonth()+1) + '-' + pad2(today.getDate()) + '.csv';
+  // ✅ Filename uses next trading day
+  link.download = 'MSP-Portfolios-' + nextDay.getFullYear() + '-' + pad2(nextDay.getMonth()+1) + '-' + pad2(nextDay.getDate()) + '.csv';
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   alert((fb ? '⚠️ Strong Buy કોઈ નથી — Top 10 by score.\n\n' : '✅ ' + list.length + ' Strong Buy શેર!\n\n') +
-    '📊 કુલ: ' + list.length + '\n⚠️ Entry = Confirm Above ભાવ.');
+    '📊 કુલ: ' + list.length + '\n' +
+    '📅 Transaction Date: ' + ds + ' (next trading day)\n' +
+    '🏷️ Tag: NSC Scanner\n' +
+    '⚠️ Entry = Confirm Above ભાવ.');
 }
 
 function analyze() {
